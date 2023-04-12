@@ -1,6 +1,7 @@
 mod handler;
 mod model;
 mod schema;
+mod printscontroller;
 
 use actix_cors::Cors;
 use actix_web::middleware::Logger;

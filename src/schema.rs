@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Deserialize, Debug)]
 pub struct FilterOptions {
@@ -29,3 +30,10 @@ pub struct CreateFileSchema {
     #[serde(rename = "averageRating", skip_serializing_if = "Option::is_none")]
     pub average_rating: Option<f32>
 }
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct GetIdSchema {
+    pub id: Uuid
+}
+
+

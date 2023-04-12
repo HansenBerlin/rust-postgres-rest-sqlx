@@ -1,11 +1,15 @@
 use crate::{
-    model::FileModel,
-    schema::{CreateFileSchema, FilterOptions, UpdateFileSchema},
+    model::{FileModel, FileModelWithUuids},
+    schema::{CreateFileSchema, FilterOptions, UpdateFileSchema, GetIdSchema},
     AppState,
 };
 use actix_web::{delete, get, patch, post, web, HttpResponse, Responder};
 use serde_json::json;
-use crate::model::PrintModel;
+use uuid::Uuid;
+use futures;
+use futures::TryFutureExt;
+use crate::printscontroller::{print_list_handler};
+use sqlx::{Error, Result};
 
 #[get("/")]
 async fn health_checker_handler() -> impl Responder {
@@ -13,8 +17,42 @@ async fn health_checker_handler() -> impl Responder {
     HttpResponse::Ok().json(json!({"status": "success","message": MESSAGE}))
 }
 
+
 #[get("/files")]
 pub async fn file_list_handler(
+    opts: web::Query<FilterOptions>,
+    data: web::Data<AppState>,
+) -> impl Responder {
+    let limit = opts.limit.unwrap_or(10);
+    let offset = (opts.page.unwrap_or(1) - 1) * limit;
+
+    let query_result = sqlx::query_as!(
+        FileModel,
+        "SELECT * FROM file ORDER by id LIMIT $1 OFFSET $2",
+        limit as i32,
+        offset as i32
+    )
+        .fetch_all(&data.db)
+        .await;
+
+    if query_result.is_err() {
+        let message = "Something bad happened while fetching all note items";
+        return HttpResponse::InternalServerError()
+            .json(json!({"status": "error","message": message}));
+    }
+
+    let notes = query_result.unwrap();
+
+    let json_response = json!({
+        "status": "success",
+        "results": notes.len(),
+        "notes": notes
+    });
+    HttpResponse::Ok().json(json_response)
+}
+
+#[get("/fileswithids")]
+pub async fn file_list_handler_ids(
     opts: web::Query<FilterOptions>,
     data: web::Data<AppState>,
 ) -> impl Responder {
@@ -36,14 +74,57 @@ pub async fn file_list_handler(
             .json(json!({"status": "error","message": message}));
     }
 
-    let notes = query_result.unwrap();
-
-    let json_response = json!({
-        "status": "success",
-        "results": notes.len(),
-        "notes": notes
+    let file_models = query_result.unwrap();
+    let futures = file_models.iter().map(|file_model| {
+        let data = data.clone();
+        async move {
+            let uuids = get_file_ids(file_model.id, data).await.map_err(|e| {
+                eprintln!("Error getting file IDs: {}", e);
+                e
+            })?;
+            Ok(FileModelWithUuids {
+                file_model: file_model.clone(),
+                uuids,
+            })
+        }
     });
+
+    let file_models_with_uuids: Result<Vec<_>> = futures::future::join_all(futures).await.into_iter().collect();
+    let json_response = match file_models_with_uuids {
+        Ok(file_models_with_uuids) => json!({
+            "status": "success",
+            "results": file_models_with_uuids.len(),
+            "files": file_models_with_uuids,
+        }),
+        Err(e) => json!({
+            "status": "error",
+            "message": "Error joining futures",
+            "error": format!("{}", e),
+        }),
+    };
+
     HttpResponse::Ok().json(json_response)
+}
+
+
+
+pub async fn get_file_ids(
+    file_id: Uuid,
+    data: web::Data<AppState>,
+) -> Result<Vec<Uuid>> {
+    let query_result = sqlx::query_as!(
+        GetIdSchema,
+        "select g.id as id from file
+            left join gcode g on file.id = g.file_pk
+            where file.id = $1",
+        file_id as Uuid
+    )
+        .fetch_all(&data.db)
+        .await?;
+
+    let vector_of_uuids: Vec<Uuid> = query_result.iter().map(|get_id_schema| get_id_schema.id).collect();
+
+    Ok(vector_of_uuids)
 }
 
 #[post("/files/")]
@@ -98,7 +179,7 @@ async fn get_file_handler(
     match query_result {
         Ok(note) => {
             let note_response = json!({"status": "success","data": serde_json::json!({
-                "note": note
+                "file": note
             })});
 
             return HttpResponse::Ok().json(note_response);
@@ -181,46 +262,6 @@ async fn delete_file_handler(
 }
 
 
-#[get("/prints")]
-pub async fn print_list_handler(
-    opts: web::Query<FilterOptions>,
-    data: web::Data<AppState>,
-) -> impl Responder {
-    let limit = opts.limit.unwrap_or(10);
-    let offset = (opts.page.unwrap_or(1) - 1) * limit;
-
-    let query_result = sqlx::query_as!(
-        PrintModel,
-        "select pr.id as id, nozzle_size_mm, bed_temp_celsius, extruder_temp, successful,
-            concat(mb.full_name, ' ', m.description) as filament,
-            concat(mat_type, '') as filament_type, concat(pb.full_name, ' ', model) as printer, g.id as gcode_id
-        from print pr
-            left join material m on m.id = pr.material_fk
-            left join printer p on p.id = pr.printer_fk
-            left join gcode g on g.id = pr.gcode_fk
-            left join material_brand mb on mb.id = m.material_brand_fk
-            LEFT JOIN printer_brand pb on pb.id = p.printer_brand_fk ORDER by id LIMIT $1 OFFSET $2",
-        limit as i32,
-        offset as i32,
-        )
-        .fetch_all(&data.db)
-        .await;
-
-    if query_result.is_err() {
-        let message = "Something bad happened while fetching all note items";
-        return HttpResponse::InternalServerError()
-            .json(json!({"status": "error","message": message}));
-    }
-
-    let notes = query_result.unwrap();
-
-    let json_response = json!({
-        "status": "success",
-        "results": notes.len(),
-        "notes": notes
-    });
-    HttpResponse::Ok().json(json_response)
-}
 
 
 
