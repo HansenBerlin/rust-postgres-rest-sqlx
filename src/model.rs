@@ -21,19 +21,6 @@ pub struct FileModelWithUuids {
     pub uuids: Vec<Uuid>,
 }
 
-#[derive(Debug, FromRow, Deserialize, Serialize)]
-#[allow(non_snake_case)]
-pub struct FileModel2 {
-    pub id: Uuid,
-    pub fullname: String,
-    pub author: String,
-    pub created: Option<chrono::DateTime<chrono::Utc>>,
-    pub sizebytes: i64,
-    pub downloads: Option<i32>,
-    #[serde(rename = "averageRating")]
-    pub average_rating: Option<f32>,
-    pub print_ids: Option<Vec<Uuid>>
-}
 
 #[derive(Debug, FromRow, Deserialize, Serialize)]
 #[allow(non_snake_case)]
