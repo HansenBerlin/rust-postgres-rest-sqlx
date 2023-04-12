@@ -11,20 +11,21 @@ pub struct ParamOptions {
     pub id: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct CreateNoteSchema {
-    pub title: String,
-    pub content: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub category: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub published: Option<bool>,
+#[derive(Debug, Deserialize, Serialize)]
+pub struct UpdateFileSchema {
+    pub fullname: Option<String>,
+    pub author: Option<String>,
+    pub downloads: Option<i32>,
+    pub average_rating: Option<f32>
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct UpdateNoteSchema {
-    pub title: Option<String>,
-    pub content: Option<String>,
-    pub category: Option<String>,
-    pub published: Option<bool>,
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CreateFileSchema {
+    pub fullname: String,
+    pub author: String,
+    pub sizebytes: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub downloads: Option<i32>,
+    #[serde(rename = "averageRating", skip_serializing_if = "Option::is_none")]
+    pub average_rating: Option<f32>
 }
