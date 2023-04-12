@@ -70,16 +70,16 @@ create table if not exists print
     references gcode,
     nozzle_size_mm   double precision,
     bed_temp_celsius integer,
-    successful       boolean default true,
+    successful       boolean default true not null,
     extruder_temp    integer
     );
 
 
 create table if not exists user_account
 (
-    mail varchar(100) NOT NULL PRIMARY KEY,
+    id uuid DEFAULT (uuid_generate_v4()) PRIMARY KEY NOT NULL,
     user_name varchar(100) NOT NULL,
-    UNIQUE (mail, user_name)
+    UNIQUE (id, user_name)
     );
 
 
@@ -90,7 +90,7 @@ create table if not exists file_permissions
 
 create table if not exists files_per_user
 (
-    user_account_pk varchar(100) not null
+    user_account_pk uuid not null
     constraint files_per_user_user_account_fk
     references user_account,
     roles_pk varchar(10) not null
@@ -102,11 +102,11 @@ create table if not exists files_per_user
     unique (user_account_pk, files_pk)
     );
 
-INSERT INTO user_account (mail, user_name) VALUES ('mail1@mail.de', 'User 1');
-INSERT INTO user_account (mail, user_name) VALUES ('mail2@mail.de', 'User 2');
-INSERT INTO user_account (mail, user_name) VALUES ('mail3@mail.de', 'User 3');
-INSERT INTO user_account (mail, user_name) VALUES ('mail4@mail.de', 'User 4');
-INSERT INTO user_account (mail, user_name) VALUES ('mail5@mail.de', 'User 5');
+INSERT INTO user_account (user_name) VALUES ('User 1');
+INSERT INTO user_account (user_name) VALUES ('User 2');
+INSERT INTO user_account (user_name) VALUES ('User 3');
+INSERT INTO user_account (user_name) VALUES ('User 4');
+INSERT INTO user_account (user_name) VALUES ('User 5');
 
 
 INSERT INTO file_permissions (permission) VALUES ('owner');
@@ -261,7 +261,7 @@ BEGIN
 FOR row_record IN SELECT * FROM file LOOP BEGIN
                   insert into files_per_user(user_account_pk, roles_pk, files_pk) VALUES
                       (
-                      (SELECT mail FROM user_account ORDER BY random() LIMIT 1),
+                      (SELECT id FROM user_account ORDER BY random() LIMIT 1),
                       'owner',
                       row_record.id
                       );
@@ -275,10 +275,10 @@ $do$;
 DO
 $do$
 BEGIN
-FOR i IN 1..100 LOOP BEGIN
+FOR i IN 1..80 LOOP BEGIN
             insert into files_per_user(user_account_pk, roles_pk, files_pk) VALUES
                 (
-                    (SELECT mail FROM user_account ORDER BY random() LIMIT 1),
+                    (SELECT id FROM user_account ORDER BY random() LIMIT 1),
                     (SELECT permission FROM file_permissions
                                        WHERE permission = 'read' or permission = 'delete'
                                         ORDER BY random() LIMIT 1),
@@ -289,3 +289,4 @@ END;
 END LOOP;
 END
 $do$;
+

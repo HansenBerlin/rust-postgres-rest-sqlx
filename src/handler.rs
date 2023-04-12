@@ -18,17 +18,33 @@ async fn health_checker_handler() -> impl Responder {
 }
 
 
-#[get("/files")]
+#[get("/files/{user_id}")]
 pub async fn file_list_handler(
     opts: web::Query<FilterOptions>,
     data: web::Data<AppState>,
+    path: web::Path<uuid::Uuid>,
 ) -> impl Responder {
+    let id = path.into_inner();
     let limit = opts.limit.unwrap_or(10);
     let offset = (opts.page.unwrap_or(1) - 1) * limit;
 
     let query_result = sqlx::query_as!(
         FileModel,
-        "SELECT * FROM file ORDER by id LIMIT $1 OFFSET $2",
+        "
+select id, fullname, created, sizebytes, downloads, average_rating, fpu.user_account_pk, fpu.roles_pk from file
+left join files_per_user fpu on file.id = fpu.files_pk
+where fpu.user_account_pk = $1
+union
+SELECT file.*, files_per_user.user_account_pk, files_per_user.roles_pk
+FROM file
+         JOIN files_per_user ON file.id = files_per_user.files_pk
+WHERE file.id IN (
+    SELECT files_pk
+    FROM files_per_user
+    GROUP BY files_pk
+    HAVING COUNT(*) = 1
+) LIMIT $2 OFFSET $3",
+        id as Uuid,
         limit as i32,
         offset as i32
     )
@@ -51,82 +67,7 @@ pub async fn file_list_handler(
     HttpResponse::Ok().json(json_response)
 }
 
-#[get("/fileswithids")]
-pub async fn file_list_handler_ids(
-    opts: web::Query<FilterOptions>,
-    data: web::Data<AppState>,
-) -> impl Responder {
-    let limit = opts.limit.unwrap_or(10);
-    let offset = (opts.page.unwrap_or(1) - 1) * limit;
-
-    let query_result = sqlx::query_as!(
-        FileModel,
-        "SELECT * FROM file ORDER by id LIMIT $1 OFFSET $2",
-        limit as i32,
-        offset as i32
-    )
-    .fetch_all(&data.db)
-    .await;
-
-    if query_result.is_err() {
-        let message = "Something bad happened while fetching all note items";
-        return HttpResponse::InternalServerError()
-            .json(json!({"status": "error","message": message}));
-    }
-
-    let file_models = query_result.unwrap();
-    let futures = file_models.iter().map(|file_model| {
-        let data = data.clone();
-        async move {
-            let uuids = get_file_ids(file_model.id, data).await.map_err(|e| {
-                eprintln!("Error getting file IDs: {}", e);
-                e
-            })?;
-            Ok(FileModelWithUuids {
-                file_model: file_model.clone(),
-                uuids,
-            })
-        }
-    });
-
-    let file_models_with_uuids: Result<Vec<_>> = futures::future::join_all(futures).await.into_iter().collect();
-    let json_response = match file_models_with_uuids {
-        Ok(file_models_with_uuids) => json!({
-            "status": "success",
-            "results": file_models_with_uuids.len(),
-            "files": file_models_with_uuids,
-        }),
-        Err(e) => json!({
-            "status": "error",
-            "message": "Error joining futures",
-            "error": format!("{}", e),
-        }),
-    };
-
-    HttpResponse::Ok().json(json_response)
-}
-
-
-
-pub async fn get_file_ids(
-    file_id: Uuid,
-    data: web::Data<AppState>,
-) -> Result<Vec<Uuid>> {
-    let query_result = sqlx::query_as!(
-        GetIdSchema,
-        "select g.id as id from file
-            left join gcode g on file.id = g.file_pk
-            where file.id = $1",
-        file_id as Uuid
-    )
-        .fetch_all(&data.db)
-        .await?;
-
-    let vector_of_uuids: Vec<Uuid> = query_result.iter().map(|get_id_schema| get_id_schema.id).collect();
-
-    Ok(vector_of_uuids)
-}
-
+/*
 #[post("/files/")]
 async fn create_file_handler(
     body: web::Json<CreateFileSchema>,
@@ -166,6 +107,8 @@ async fn create_file_handler(
     }
 }
 
+ */
+/*
 #[get("/files/{id}")]
 async fn get_file_handler(
     path: web::Path<uuid::Uuid>,
@@ -261,6 +204,8 @@ async fn delete_file_handler(
     HttpResponse::NoContent().finish()
 }
 
+ */
+
 
 
 
@@ -269,10 +214,10 @@ pub fn config(conf: &mut web::ServiceConfig) {
     let scope = web::scope("/api")
         .service(health_checker_handler)
         .service(file_list_handler)
-        .service(create_file_handler)
-        .service(get_file_handler)
-        .service(edit_file_handler)
-        .service(delete_file_handler)
+        //.service(create_file_handler)
+        //.service(get_file_handler)
+        //.service(edit_file_handler)
+        //.service(delete_file_handler)
         .service(print_list_handler);
 
     conf.service(scope);

@@ -5,14 +5,15 @@ use uuid::Uuid;
 #[derive(Debug, FromRow, Deserialize, Serialize, Clone)]
 #[allow(non_snake_case)]
 pub struct FileModel {
-    pub id: Uuid,
-    pub fullname: String,
-    pub author: String,
+    pub id: Option<Uuid>,
+    pub fullname: Option<String>,
     pub created: Option<chrono::DateTime<chrono::Utc>>,
-    pub sizebytes: i64,
+    pub sizebytes: Option<i64>,
     pub downloads: Option<i32>,
     #[serde(rename = "averageRating")]
-    pub average_rating: Option<f32>
+    pub average_rating: Option<f32>,
+    pub user_account_pk: Option<Uuid>,
+    pub roles_pk: Option<String>
 }
 
 #[derive(Debug, FromRow, Deserialize, Serialize, Clone)]
