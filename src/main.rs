@@ -2,6 +2,7 @@ mod handler;
 mod model;
 mod schema;
 mod printscontroller;
+mod users_controller;
 
 use actix_cors::Cors;
 use actix_web::middleware::Logger;
@@ -55,7 +56,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(cors)
             .wrap(Logger::default())
     })
-    .bind(("127.0.0.1", 8000))?
+    .bind(("0.0.0.0", 8000))?
     .run()
     .await
 }

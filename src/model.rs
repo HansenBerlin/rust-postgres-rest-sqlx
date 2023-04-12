@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 #[derive(Debug, FromRow, Deserialize, Serialize, Clone)]
 #[allow(non_snake_case)]
-pub struct FileModel {
+pub struct FileResponseModel {
     pub id: Option<Uuid>,
     pub fullname: Option<String>,
     pub created: Option<chrono::DateTime<chrono::Utc>>,
@@ -17,11 +17,23 @@ pub struct FileModel {
 }
 
 #[derive(Debug, FromRow, Deserialize, Serialize, Clone)]
-pub struct FileModelWithUuids {
-    pub file_model: FileModel,
-    pub uuids: Vec<Uuid>,
+#[allow(non_snake_case)]
+pub struct FileRequestModel {
+    pub id: Uuid,
+    pub fullname: String,
+    pub created: Option<chrono::DateTime<chrono::Utc>>,
+    pub sizebytes: i64,
+    pub downloads: Option<i32>,
+    #[serde(rename = "averageRating")]
+    pub average_rating: Option<f32>
 }
 
+
+#[derive(Debug, FromRow, Deserialize, Serialize, Clone)]
+pub struct UserModel {
+    pub id: Uuid,
+    pub user_name: String
+}
 
 #[derive(Debug, FromRow, Deserialize, Serialize)]
 #[allow(non_snake_case)]

@@ -19,7 +19,7 @@ create table if not exists gcode
     readme text,
     file_pk UUID not null
     constraint gcode_file_fk
-    references file
+    references file not null
     );
 
 
@@ -37,7 +37,7 @@ create table if not exists material
     mat_type          varchar(24) not null,
     material_brand_fk uuid       not null
     constraint material_material_brand_id_fk
-    references material_brand
+    references material_brand not null
     );
 
 create table if not exists printer_brand
@@ -53,7 +53,7 @@ create table if not exists printer
     model            varchar(100) not null,
     printer_brand_fk uuid      not null
     constraint printer_printer_brand_id_fk
-    references printer_brand
+    references printer_brand not null
     );
 
 create table if not exists print
@@ -67,7 +67,7 @@ create table if not exists print
     references printer,
     gcode_fk         uuid not null
     constraint print_gcode_id_fk
-    references gcode,
+    references gcode not null,
     nozzle_size_mm   double precision,
     bed_temp_celsius integer,
     successful       boolean default true not null,
@@ -78,8 +78,7 @@ create table if not exists print
 create table if not exists user_account
 (
     id uuid DEFAULT (uuid_generate_v4()) PRIMARY KEY NOT NULL,
-    user_name varchar(100) NOT NULL,
-    UNIQUE (id, user_name)
+    user_name varchar(100) NOT NULL
     );
 
 
@@ -92,13 +91,13 @@ create table if not exists files_per_user
 (
     user_account_pk uuid not null
     constraint files_per_user_user_account_fk
-    references user_account,
+    references user_account not null,
     roles_pk varchar(10) not null
     constraint files_per_user_roles_fk
-    references file_permissions,
+    references file_permissions not null,
     files_pk uuid not null
     constraint files_per_user_file_fk
-    references file,
+    references file not null,
     unique (user_account_pk, files_pk)
     );
 
@@ -280,8 +279,8 @@ FOR i IN 1..80 LOOP BEGIN
                 (
                     (SELECT id FROM user_account ORDER BY random() LIMIT 1),
                     (SELECT permission FROM file_permissions
-                                       WHERE permission = 'read' or permission = 'delete'
-                                        ORDER BY random() LIMIT 1),
+                     WHERE permission = 'read' or permission = 'delete'
+                     ORDER BY random() LIMIT 1),
                     (SELECT id FROM file ORDER BY random() LIMIT 1)
                 );
 EXCEPTION WHEN unique_violation THEN

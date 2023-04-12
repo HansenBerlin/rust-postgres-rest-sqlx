@@ -23,8 +23,8 @@ pub struct UpdateFileSchema {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CreateFileSchema {
     pub fullname: String,
-    pub author: String,
     pub sizebytes: i64,
+    pub userid: Uuid,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub downloads: Option<i32>,
     #[serde(rename = "averageRating", skip_serializing_if = "Option::is_none")]
@@ -36,4 +36,10 @@ pub struct GetIdSchema {
     pub id: Uuid
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CreateFilePermissionSchema {
+    pub user_account_pk: Uuid,
+    pub roles_pk: String,
+    pub files_pk: Uuid,
+}
 
