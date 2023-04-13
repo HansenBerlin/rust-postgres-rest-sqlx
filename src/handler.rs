@@ -1,5 +1,5 @@
 use crate::{
-    model::{FileResponseModel, FileRequestModel, UserModel},
+    model::{FileExtendedResponseModel, FileResponseModel, UserModel},
     schema::{CreateFileSchema, FilterOptions, UpdateFileSchema, GetIdSchema},
     AppState,
 };
@@ -17,8 +17,16 @@ async fn health_checker_handler() -> impl Responder {
 }
 
 
+#[utoipa::path(responses(
+(status = 200, description = "OK", body = Vec<FileResponseModel>),
+(status = 404, description = "Files not found", body = String),
+(status = 500, description = "Internal server error", body = String)
+),
+params(
+("id" = Uuid, Path, description = "User Uuid (e.g 2b377fba-903f-4957-b33d-3ed2c2b2b848)")
+))]
 #[get("/files/user/{id}")]
-pub async fn file_list_handler(
+pub async fn get_files_by_user_id(
     opts: web::Query<FilterOptions>,
     data: web::Data<AppState>,
     path: web::Path<Uuid>,
@@ -28,7 +36,7 @@ pub async fn file_list_handler(
     let offset = (opts.page.unwrap_or(1) - 1) * limit;
 
     let query_result = sqlx::query_as!(
-        FileResponseModel,
+        FileExtendedResponseModel,
         "
 select id, fullname, created, sizebytes, downloads, average_rating, fpu.user_account_pk, fpu.roles_pk from file
 left join files_per_user fpu on file.id = fpu.files_pk
@@ -67,13 +75,20 @@ WHERE file.id IN (
 }
 
 
+#[utoipa::path(responses(
+(status = 200, description = "OK", body = Vec<FileResponseModel>),
+(status = 404, description = "Files not found", body = String),
+(status = 500, description = "Internal server error", body = String)
+),
+request_body(content = CreateFileSchema, description="all parameters are required"),
+)]
 #[post("/files/")]
-async fn create_file_handler(
+async fn create_file(
     body: web::Json<CreateFileSchema>,
     data: web::Data<AppState>,
 ) -> impl Responder {
     let query_result = sqlx::query_as!(
-        FileRequestModel,
+        FileResponseModel,
         "
 WITH inserted_file AS (
     INSERT INTO file (fullname, downloads, average_rating, sizebytes)
@@ -88,10 +103,10 @@ SELECT inserted_file.id, inserted_file.fullname, inserted_file.created, inserted
 FROM inserted_file;
 ",
         body.fullname,
-        body.downloads.to_owned().unwrap_or(0),
-        body.average_rating.to_owned().unwrap_or(0.0),
+        0,
+        0.0,
         body.sizebytes,
-        body.userid
+        body.owner_user_id
     )
     .fetch_one(&data.db)
     .await;
@@ -121,13 +136,21 @@ FROM inserted_file;
 
 
 
+#[utoipa::path(responses(
+(status = 200, description = "OK", body = Vec<FileResponseModel>),
+(status = 404, description = "Files not found", body = String),
+(status = 500, description = "Internal server error", body = String)
+),
+params(
+("id" = Uuid, Path, description = "File Uuid (e.g 2b377fba-903f-4957-b33d-3ed2c2b2b848)")
+))]
 #[get("/files/{id}")]
-async fn get_file_handler(
+async fn get_file_by_id(
     path: web::Path<uuid::Uuid>,
     data: web::Data<AppState>,
 ) -> impl Responder {
     let note_id = path.into_inner();
-    let query_result = sqlx::query_as!(FileRequestModel, "SELECT * FROM file WHERE id = $1", note_id)
+    let query_result = sqlx::query_as!(FileResponseModel, "SELECT * FROM file WHERE id = $1", note_id)
         .fetch_one(&data.db)
         .await;
 
@@ -147,14 +170,23 @@ async fn get_file_handler(
     }
 }
 
+#[utoipa::path(responses(
+(status = 200, description = "OK", body = Vec<FileResponseModel>),
+(status = 404, description = "Files not found", body = String),
+(status = 500, description = "Internal server error", body = String)
+),
+request_body(content = UpdateFileSchema, description="not all parameters are required"),
+params(
+("id" = Uuid, Path, description = "File Uuid (e.g 2b377fba-903f-4957-b33d-3ed2c2b2b848)")
+))]
 #[patch("/files/{id}")]
-async fn edit_file_handler(
-    path: web::Path<uuid::Uuid>,
+async fn edit_file(
+    path: web::Path<Uuid>,
     body: web::Json<UpdateFileSchema>,
     data: web::Data<AppState>,
 ) -> impl Responder {
     let note_id = path.into_inner();
-    let query_result = sqlx::query_as!(FileRequestModel, "SELECT * FROM file WHERE id = $1", note_id)
+    let query_result = sqlx::query_as!(FileResponseModel, "SELECT * FROM file WHERE id = $1", note_id)
         .fetch_one(&data.db)
         .await;
 
@@ -168,7 +200,7 @@ async fn edit_file_handler(
     let note = query_result.unwrap();
 
     let query_result = sqlx::query_as!(
-        FileRequestModel,
+        FileResponseModel,
         "UPDATE file SET fullname = $1, downloads = $2, average_rating = $3 WHERE id = $4 RETURNING *",
         body.fullname.to_owned().unwrap_or(note.fullname),
         body.downloads.to_owned().unwrap_or(note.downloads.unwrap()),
@@ -195,8 +227,17 @@ async fn edit_file_handler(
     }
 }
 
+
+#[utoipa::path(responses(
+(status = 200, description = "OK", body = Vec<FileResponseModel>),
+(status = 404, description = "File not found", body = String),
+(status = 500, description = "Internal server error", body = String)
+),
+params(
+("id" = Uuid, Path, description = "File Uuid (e.g 2b377fba-903f-4957-b33d-3ed2c2b2b848)")
+))]
 #[delete("/files/{id}")]
-async fn delete_file_handler(
+async fn delete_file(
     path: web::Path<uuid::Uuid>,
     data: web::Data<AppState>,
 ) -> impl Responder {
@@ -223,12 +264,12 @@ async fn delete_file_handler(
 pub fn config(conf: &mut web::ServiceConfig) {
     let scope = web::scope("/api")
         .service(health_checker_handler)
-        .service(file_list_handler)
+        .service(get_files_by_user_id)
         .service(user_list_handler)
-        .service(create_file_handler)
-        .service(get_file_handler)
-        .service(edit_file_handler)
-        .service(delete_file_handler)
+        .service(create_file)
+        .service(get_file_by_id)
+        .service(edit_file)
+        .service(delete_file)
         .service(print_list_handler);
 
     conf.service(scope);

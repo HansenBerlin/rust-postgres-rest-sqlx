@@ -3,7 +3,6 @@ mod model;
 mod schema;
 mod printscontroller;
 mod users_controller;
-
 use actix_cors::Cors;
 use actix_web::middleware::Logger;
 use actix_web::{http::header, web, App, HttpServer};
@@ -14,7 +13,16 @@ pub struct AppState {
     db: Pool<Postgres>,
 }
 
+use model::*;
+use schema::*;
+use handler::*;
+use printscontroller::*;
+use std::error::Error;
+use utoipa::{ openapi::security::{ApiKey, ApiKeyValue, SecurityScheme}, Modify, OpenApi };
+use utoipa_swagger_ui::SwaggerUi;
+
 #[actix_web::main]
+//#[tokio::main]
 async fn main() -> std::io::Result<()> {
     if std::env::var_os("RUST_LOG").is_none() {
         std::env::set_var("RUST_LOG", "actix_web=info");
@@ -40,6 +48,19 @@ async fn main() -> std::io::Result<()> {
 
     println!("🚀 Server started successfully");
 
+    #[derive(OpenApi)]
+    #[openapi(
+    paths(
+    get_file_by_id, get_files_by_user_id, create_file, delete_file, edit_file
+    ),
+    components(
+    schemas(
+    FileResponseModel, FileExtendedResponseModel, UserModel, PrintModel, UpdateFileSchema, CreateFileSchema, GetIdSchema, CreateFilePermissionSchema
+    )
+    )
+    )]
+    struct ApiDoc;
+
     HttpServer::new(move || {
         let cors = Cors::default()
             .allowed_origin("http://localhost:3000")
@@ -55,6 +76,8 @@ async fn main() -> std::io::Result<()> {
             .configure(handler::config)
             .wrap(cors)
             .wrap(Logger::default())
+            .service(SwaggerUi::new("/swagger-ui/{_:.*}")
+                .url("/api-doc/openapi.json", ApiDoc::openapi()))
     })
     .bind(("0.0.0.0", 8000))?
     .run()

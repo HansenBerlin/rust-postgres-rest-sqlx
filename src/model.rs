@@ -1,10 +1,12 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
+use utoipa::ToSchema;
 
-#[derive(Debug, FromRow, Deserialize, Serialize, Clone)]
+
+#[derive(Debug, FromRow, Deserialize, Serialize, Clone, ToSchema)]
 #[allow(non_snake_case)]
-pub struct FileResponseModel {
+pub struct FileExtendedResponseModel {
     pub id: Option<Uuid>,
     pub fullname: Option<String>,
     pub created: Option<chrono::DateTime<chrono::Utc>>,
@@ -16,9 +18,10 @@ pub struct FileResponseModel {
     pub roles_pk: Option<String>
 }
 
-#[derive(Debug, FromRow, Deserialize, Serialize, Clone)]
+
+#[derive(Debug, FromRow, Deserialize, Serialize, Clone, ToSchema)]
 #[allow(non_snake_case)]
-pub struct FileRequestModel {
+pub struct FileResponseModel {
     pub id: Uuid,
     pub fullname: String,
     pub created: Option<chrono::DateTime<chrono::Utc>>,
@@ -29,13 +32,13 @@ pub struct FileRequestModel {
 }
 
 
-#[derive(Debug, FromRow, Deserialize, Serialize, Clone)]
+#[derive(Debug, FromRow, Deserialize, Serialize, Clone, ToSchema)]
 pub struct UserModel {
     pub id: Uuid,
     pub user_name: String
 }
 
-#[derive(Debug, FromRow, Deserialize, Serialize)]
+#[derive(Debug, FromRow, Deserialize, Serialize, ToSchema)]
 #[allow(non_snake_case)]
 pub struct PrintModel {
     pub id: Uuid,
