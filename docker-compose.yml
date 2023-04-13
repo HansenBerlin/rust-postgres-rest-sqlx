@@ -5,16 +5,34 @@ services:
     container_name: postgres
     ports:
       - '6500:5432'
+    networks:
+      backend:
+        ipv4_address: 192.168.176.2
     volumes:
       - progresDB:/data/postgres
+      - ./db/postgres.conf:/etc/postgresql/postgresql.conf
+      - ./db/postgres.sql:/docker-entrypoint-initdb.d/postgres.sql
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
     env_file:
       - ./.env
-  pgAdmin:
-    image: dpage/pgadmin4
-    container_name: pgAdmin
-    env_file:
-      - ./.env
+
+  rest-api:
+    image: actix-postgres-threedee:latest
     ports:
-      - "5050:80"
+      - "8000:8000"
+    networks:
+      - backend
+    depends_on:
+      - postgres
+    environment:
+      - DATABASE_URL=postgresql://admin:password123@192.168.176.2:5432/rust_sqlx?schema=public
 volumes:
   progresDB:
+
+networks:
+  backend:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.176.0/24
+          gateway: 192.168.176.1
