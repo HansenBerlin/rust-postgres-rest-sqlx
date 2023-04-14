@@ -6,6 +6,7 @@ use crate::{
 use actix_web::{delete, get, patch, post, web, HttpResponse, Responder};
 use serde_json::{from_value, json};
 use uuid::Uuid;
+use crate::model::FileSimpleResponseModel;
 use crate::printscontroller::{print_list_handler};
 use crate::schema::CreateFilePermissionSchema;
 use crate::users_controller::{get_user_id_by_mail, user_list_handler};
@@ -145,26 +146,33 @@ FROM inserted_file;
 params(
 ("id" = Uuid, Path, description = "File Uuid (e.g 2b377fba-903f-4957-b33d-3ed2c2b2b848)")
 ))]
-#[get("/files/{id}")]
+#[get("/files/{id}/{userid}")]
 async fn get_file_by_id(
-    path: web::Path<uuid::Uuid>,
+    path: web::Path<(Uuid, Uuid)>,
     data: web::Data<AppState>,
 ) -> impl Responder {
     let note_id = path.into_inner();
-    let query_result = sqlx::query_as!(FileResponseModel, "SELECT * FROM file WHERE id = $1", note_id)
+    let query_result = sqlx::query_as!(FileSimpleResponseModel,
+        "
+select a.*, user_name as owner, roles_pk from
+    (select id, fullname, created, sizebytes, downloads, average_rating
+     from file
+     where file.id = $1) a
+        left join files_per_user fpu on a.id = fpu.files_pk
+        left join user_account ua on ua.id = fpu.user_account_pk
+where ua.id = $2",
+        note_id.0, note_id.1)
         .fetch_one(&data.db)
         .await;
 
     return match query_result {
         Ok(note) => {
-            let note_response = json!({"status": "success","data": serde_json::json!({
-                "file": note
-            })});
 
-            HttpResponse::Ok().json(note_response)
+
+            HttpResponse::Ok().json(note)
         }
         Err(_) => {
-            let message = format!("Note with ID: {} not found", note_id);
+            let message = format!("Note with ID: {}, {} not found", note_id.0, note_id.1);
             HttpResponse::NotFound()
                 .json(json!({"status": "fail","message": message}))
         }

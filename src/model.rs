@@ -19,6 +19,21 @@ pub struct FileExtendedResponseModel {
     pub roles_pk: Option<String>
 }
 
+#[derive(Debug, FromRow, Deserialize, Serialize, Clone, ToSchema)]
+#[allow(non_snake_case)]
+pub struct FileSimpleResponseModel {
+    pub id: Uuid,
+    pub fullname: String,
+    pub created: Option<chrono::DateTime<chrono::Utc>>,
+    pub sizebytes: i64,
+    pub downloads: Option<i32>,
+    #[serde(rename = "averageRating")]
+    pub average_rating: Option<f32>,
+    pub owner: String,
+    #[serde(rename = "permission")]
+    pub roles_pk: String
+}
+
 
 #[derive(Debug, FromRow, Deserialize, Serialize, Clone, ToSchema)]
 #[allow(non_snake_case)]
