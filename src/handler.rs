@@ -8,7 +8,7 @@ use serde_json::{from_value, json};
 use uuid::Uuid;
 use crate::printscontroller::{print_list_handler};
 use crate::schema::CreateFilePermissionSchema;
-use crate::users_controller::user_list_handler;
+use crate::users_controller::{get_user_id_by_mail, user_list_handler};
 
 #[get("/")]
 async fn health_checker_handler() -> impl Responder {
@@ -38,11 +38,12 @@ pub async fn get_files_by_user_id(
     let query_result = sqlx::query_as!(
         FileExtendedResponseModel,
         "
-select id, fullname, created, sizebytes, downloads, average_rating, fpu.user_account_pk, fpu.roles_pk from file
-left join files_per_user fpu on file.id = fpu.files_pk
+select a.*, b.owner from
+(select id, fullname, created, sizebytes, downloads, average_rating,
+       fpu.roles_pk from file                                                                                                               left join files_per_user fpu on file.id = fpu.files_pk
 where fpu.user_account_pk = $1
 union
-SELECT file.*, files_per_user.user_account_pk, files_per_user.roles_pk
+SELECT file.*, files_per_user.roles_pk
 FROM file
          JOIN files_per_user ON file.id = files_per_user.files_pk
 WHERE file.id IN (
@@ -50,7 +51,13 @@ WHERE file.id IN (
     FROM files_per_user
     GROUP BY files_pk
     HAVING COUNT(*) = 1
-) LIMIT $2 OFFSET $3",
+)) a
+JOIN
+(select file.id, user_name as owner from file
+left join files_per_user fpu on file.id = fpu.files_pk
+left join user_account ua on ua.id = fpu.user_account_pk
+where fpu.roles_pk = 'owner') b
+on a.id = b.id LIMIT $2 OFFSET $3",
         id as Uuid,
         limit as i32,
         offset as i32
@@ -65,13 +72,7 @@ WHERE file.id IN (
     }
 
     let notes = query_result.unwrap();
-
-    let json_response = json!({
-        "status": "success",
-        "results": notes.len(),
-        "notes": notes
-    });
-    HttpResponse::Ok().json(json_response)
+    HttpResponse::Ok().json(notes)
 }
 
 
@@ -257,6 +258,22 @@ async fn delete_file(
 }
 
 
+#[utoipa::path(responses(
+(status = 200, description = "OK", body = String),
+(status = 404, description = "Files not found", body = String),
+(status = 500, description = "Internal server error", body = String)
+),
+params(
+("mail" = String, Path, description = "User Mail")
+))]
+#[get("/usersaa/{mail}")]
+pub async fn get_user_id_by_mail2(
+    path: web::Path<String>,
+    data: web::Data<AppState>,
+) -> impl Responder {
+    let mail = path.into_inner();
+    HttpResponse::Ok().json(format!("hello {}", mail))
+}
 
 
 
@@ -270,6 +287,7 @@ pub fn config(conf: &mut web::ServiceConfig) {
         .service(get_file_by_id)
         .service(edit_file)
         .service(delete_file)
+        .service(get_user_id_by_mail)
         .service(print_list_handler);
 
     conf.service(scope);

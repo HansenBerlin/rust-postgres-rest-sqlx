@@ -14,7 +14,8 @@ pub struct FileExtendedResponseModel {
     pub downloads: Option<i32>,
     #[serde(rename = "averageRating")]
     pub average_rating: Option<f32>,
-    pub user_account_pk: Option<Uuid>,
+    pub owner: Option<String>,
+    #[serde(rename = "permission")]
     pub roles_pk: Option<String>
 }
 

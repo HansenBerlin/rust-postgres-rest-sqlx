@@ -17,6 +17,7 @@ use model::*;
 use schema::*;
 use handler::*;
 use printscontroller::*;
+use users_controller::*;
 use std::error::Error;
 use utoipa::{ openapi::security::{ApiKey, ApiKeyValue, SecurityScheme}, Modify, OpenApi };
 use utoipa_swagger_ui::SwaggerUi;
@@ -51,7 +52,7 @@ async fn main() -> std::io::Result<()> {
     #[derive(OpenApi)]
     #[openapi(
     paths(
-    get_file_by_id, get_files_by_user_id, create_file, delete_file, edit_file
+    get_file_by_id, get_files_by_user_id, create_file, delete_file, edit_file, get_user_id_by_mail
     ),
     components(
     schemas(
