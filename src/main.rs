@@ -23,7 +23,6 @@ use utoipa::{ openapi::security::{ApiKey, ApiKeyValue, SecurityScheme}, Modify, 
 use utoipa_swagger_ui::SwaggerUi;
 
 #[actix_web::main]
-//#[tokio::main]
 async fn main() -> std::io::Result<()> {
     if std::env::var_os("RUST_LOG").is_none() {
         std::env::set_var("RUST_LOG", "actix_web=info");
@@ -64,7 +63,7 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         let cors = Cors::default()
-            .allowed_origin("http://localhost:3000")
+            .allowed_origin("http://localhost:5001")
             .allowed_methods(vec!["GET", "POST", "PATCH", "DELETE"])
             .allowed_headers(vec![
                 header::CONTENT_TYPE,

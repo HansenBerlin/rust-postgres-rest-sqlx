@@ -81,6 +81,14 @@ create table if not exists user_account
     user_name varchar(100) NOT NULL
     );
 
+create table if not exists user_account_mails
+(
+    mail varchar(100) PRIMARY KEY NOT NULL,
+    user_account_pk uuid not null
+    constraint user_account_mails_user_account_fk
+    references user_account not null
+    );
+
 
 create table if not exists file_permissions
 (
@@ -111,6 +119,7 @@ INSERT INTO user_account (user_name) VALUES ('User 5');
 INSERT INTO file_permissions (permission) VALUES ('owner');
 INSERT INTO file_permissions (permission) VALUES ('delete');
 INSERT INTO file_permissions (permission) VALUES ('read');
+
 
 INSERT INTO file (fullname, created, sizebytes, downloads, average_rating) VALUES ('anbumaske', '2022-03-23 09:10:20.000000', 142345, 11, 1.2);
 INSERT INTO file (fullname, created, sizebytes, downloads, average_rating) VALUES ('fliege','2022-01-05 10:15:00.000000', 10245328, 213, 4.5);
@@ -175,7 +184,9 @@ INSERT INTO material (description, mat_type, material_brand_fk) VALUES ('True Gr
 INSERT INTO material (description, mat_type, material_brand_fk) VALUES ('Bronze Infused', 'PETG', (SELECT id FROM material_brand ORDER BY random() LIMIT 1));
 INSERT INTO material (description, mat_type, material_brand_fk) VALUES ('Translucent Yellow', 'ABS', (SELECT id FROM material_brand ORDER BY random() LIMIT 1));
 
-
+INSERT INTO user_account_mails (mail, user_account_pk) VALUES ('hansdrum@hotmail.com', (SELECT id FROM user_account ORDER BY random() LIMIT 1));
+INSERT INTO user_account_mails (mail, user_account_pk) VALUES ('hansdrum%40hotmail.com', (SELECT id FROM user_account ORDER BY random() LIMIT 1));
+INSERT INTO user_account_mails (mail, user_account_pk) VALUES ('hansdrum@googlemail.com', (SELECT id FROM user_account ORDER BY random() LIMIT 1));
 
 DO
 $do$
@@ -257,4 +268,5 @@ END;
 END LOOP;
 END
 $do$;
+
 

@@ -186,6 +186,7 @@ INSERT INTO material (description, mat_type, material_brand_fk) VALUES ('Translu
 
 INSERT INTO user_account_mails (mail, user_account_pk) VALUES ('hansdrum@hotmail.com', (SELECT id FROM user_account ORDER BY random() LIMIT 1));
 INSERT INTO user_account_mails (mail, user_account_pk) VALUES ('hansdrum%40hotmail.com', (SELECT id FROM user_account ORDER BY random() LIMIT 1));
+INSERT INTO user_account_mails (mail, user_account_pk) VALUES ('hansdrum@googlemail.com', (SELECT id FROM user_account ORDER BY random() LIMIT 1));
 
 DO
 $do$
@@ -267,5 +268,17 @@ END;
 END LOOP;
 END
 $do$;
+
+CREATE TABLE users (
+                       id SERIAL PRIMARY KEY,
+                       name VARCHAR(50),
+                       email VARCHAR(100)
+);
+
+INSERT INTO users (name, email)
+VALUES
+    ('Alice', 'alice@example.com'),
+    ('Bob', 'bob@example.com'),
+    ('Charlie', 'charlie@example.com');
 
 

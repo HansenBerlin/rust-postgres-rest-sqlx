@@ -18,5 +18,9 @@ sqlx = { version = "0.6.2", features = ["runtime-async-std-native-tls", "postgre
 uuid = { version = "1.2.2", features = ["serde", "v4"] }
 utoipa = { git="https://github.com/juhaku/utoipa.git", features = ["actix_extras"] }
 utoipa-swagger-ui = { git="https://github.com/juhaku/utoipa.git", features = ["actix-web"] }
-#tokio = { version = "1", features = ["full"] }
+tokio = { version = "1", features = ["full"] }
+#postgres = { version = "*" }
+tokio-postgres = "0.7.2"
+
+
 

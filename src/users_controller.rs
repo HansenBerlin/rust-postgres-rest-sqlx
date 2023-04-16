@@ -45,11 +45,9 @@ pub async fn user_list_handler(
 #[utoipa::path(responses(
 (status = 200, description = "OK, User Uuid", body = GetIdSchema),
 (status = 404, description = "Files not found", body = String),
-(status = 500, description = "Internal server error", body = String)
-),
-params(
-("mail" = String, Path, description = "User Mail")
-))]
+(status = 500, description = "Internal server error", body = String)),
+params(("mail" = String, Path, description = "User Mail")))]
+
 #[get("/users/{mail}")]
 pub async fn get_user_id_by_mail(
     path: web::Path<String>,
@@ -58,12 +56,12 @@ pub async fn get_user_id_by_mail(
     let mail = path.into_inner();
     let query_result = sqlx::query_as!(GetIdSchema, "
         SELECT id FROM user_account ua
-            left join user_account_mails um on ua.id = um.user_account_pk
+            LEFT JOIN user_account_mails um ON ua.id = um.user_account_pk
             WHERE um.mail = $1", mail)
         .fetch_one(&data.db)
         .await;
 
-    return match query_result {
+    match query_result {
         Ok(note) => {
             HttpResponse::Ok().json(note)
         }

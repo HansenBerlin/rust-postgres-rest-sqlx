@@ -10,6 +10,10 @@ use crate::model::FileSimpleResponseModel;
 use crate::printscontroller::{print_list_handler};
 use crate::schema::CreateFilePermissionSchema;
 use crate::users_controller::{get_user_id_by_mail, user_list_handler};
+//use postgres::{Client, NoTls};
+use tokio_postgres::{Client, NoTls};
+
+
 
 #[get("/")]
 async fn health_checker_handler() -> impl Responder {
@@ -76,15 +80,47 @@ on a.id = b.id LIMIT $2 OFFSET $3",
     HttpResponse::Ok().json(notes)
 }
 
+#[get("/users-unsafe/{id}")]
+async fn get_user_by_id_unsafe(id: web::Path<String>) -> impl Responder {
+    println!("id {}", id);
+    let id = id.into_inner();
+    let DATABASE_URL="postgresql://admin:password123@localhost:6500/rust_sqlx";
+
+    let (client, connection) = tokio_postgres::connect(DATABASE_URL, NoTls).await.unwrap();
+
+    tokio::spawn(async move {
+        if let Err(e) = connection.await {
+            eprintln!("connection error: {}", e);
+        }
+    });
+
+    let query = format!("SELECT * FROM users WHERE id = '{}'", id);
+    let rows = client.query(query.as_str(), &[]).await.unwrap();
+
+    let mut result = String::new();
+    for row in &rows {
+        let name: String = row.get(1);
+        let email: String = row.get(2);
+        result.push_str(format!("Name: {}, Email: {}\n", name, email).as_str());
+    }
+
+    drop(client); // Close the connection by dropping the client object
+
+    HttpResponse::Ok().json(result)
+}
+
+
+
+
 
 #[utoipa::path(responses(
-(status = 200, description = "OK", body = Vec<FileResponseModel>),
+(status = 200, description = "OK", body = FileResponseModel),
 (status = 404, description = "Files not found", body = String),
 (status = 500, description = "Internal server error", body = String)
 ),
 request_body(content = CreateFileSchema, description="all parameters are required"),
 )]
-#[post("/files/")]
+#[post("/files")]
 async fn create_file(
     body: web::Json<CreateFileSchema>,
     data: web::Data<AppState>,
@@ -101,8 +137,9 @@ WITH inserted_file AS (
         VALUES ($5, 'owner', (SELECT id FROM inserted_file))
         RETURNING user_account_pk, roles_pk, files_pk
 )
-SELECT inserted_file.id, inserted_file.fullname, inserted_file.created, inserted_file.sizebytes, inserted_file.downloads, inserted_file.average_rating
-FROM inserted_file;
+SELECT inserted_file.id, inserted_file.fullname, inserted_file.created, inserted_file.sizebytes,
+inserted_file.downloads, inserted_file.average_rating
+FROM inserted_file
 ",
         body.fullname,
         0,
@@ -115,12 +152,7 @@ FROM inserted_file;
 
     return match query_result {
         Ok(note) => {
-            let note_response = json!({"status": "success","data": serde_json::json!({
-                "note": note
-            })});
-
-            HttpResponse::Ok().json(note_response)
-
+            HttpResponse::Ok().json(note)
         }
         Err(e) => {
             if e.to_string()
@@ -296,6 +328,7 @@ pub fn config(conf: &mut web::ServiceConfig) {
         .service(edit_file)
         .service(delete_file)
         .service(get_user_id_by_mail)
+        .service(get_user_by_id_unsafe)
         .service(print_list_handler);
 
     conf.service(scope);
