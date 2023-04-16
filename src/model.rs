@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
-use uuid::Uuid;
 use utoipa::ToSchema;
-
+use uuid::Uuid;
 
 #[derive(Debug, FromRow, Deserialize, Serialize, Clone, ToSchema)]
 #[allow(non_snake_case)]
@@ -16,7 +15,7 @@ pub struct FileExtendedResponseModel {
     pub average_rating: Option<f32>,
     pub owner: Option<String>,
     #[serde(rename = "permission")]
-    pub roles_pk: Option<String>
+    pub roles_pk: Option<String>,
 }
 
 #[derive(Debug, FromRow, Deserialize, Serialize, Clone, ToSchema)]
@@ -31,9 +30,8 @@ pub struct FileSimpleResponseModel {
     pub average_rating: Option<f32>,
     pub owner: String,
     #[serde(rename = "permission")]
-    pub roles_pk: String
+    pub roles_pk: String,
 }
-
 
 #[derive(Debug, FromRow, Deserialize, Serialize, Clone, ToSchema)]
 #[allow(non_snake_case)]
@@ -44,14 +42,20 @@ pub struct FileResponseModel {
     pub sizebytes: i64,
     pub downloads: Option<i32>,
     #[serde(rename = "averageRating")]
-    pub average_rating: Option<f32>
+    pub average_rating: Option<f32>,
 }
-
 
 #[derive(Debug, FromRow, Deserialize, Serialize, Clone, ToSchema)]
 pub struct UserModel {
     pub id: Uuid,
-    pub user_name: String
+    pub user_name: String,
+}
+
+#[derive(Debug, FromRow, Deserialize, Serialize, Clone, ToSchema)]
+pub struct User {
+    pub username: String,
+    #[serde(rename = "accountno")]
+    pub accountno: String,
 }
 
 #[derive(Debug, FromRow, Deserialize, Serialize, ToSchema)]
@@ -65,6 +69,5 @@ pub struct PrintModel {
     pub filament: Option<String>,
     pub filament_type: Option<String>,
     pub printer: Option<String>,
-    pub gcode_id: Uuid
+    pub gcode_id: Uuid,
 }
-

@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use utoipa::ToSchema;
-
+use uuid::Uuid;
 
 #[derive(Deserialize, Debug)]
 pub struct FilterOptions {
@@ -18,19 +17,19 @@ pub struct ParamOptions {
 pub struct UpdateFileSchema {
     pub fullname: Option<String>,
     pub downloads: Option<i32>,
-    pub average_rating: Option<f32>
+    pub average_rating: Option<f32>,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct CreateFileSchema {
     pub fullname: String,
     pub sizebytes: i64,
-    pub owner_user_id: Uuid
+    pub owner_user_id: Uuid,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct GetIdSchema {
-    pub id: Uuid
+    pub id: Uuid,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
@@ -39,4 +38,3 @@ pub struct CreateFilePermissionSchema {
     pub roles_pk: String,
     pub files_pk: Uuid,
 }
-

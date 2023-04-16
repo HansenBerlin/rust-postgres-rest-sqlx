@@ -1,7 +1,7 @@
 mod handler;
 mod model;
-mod schema;
 mod printscontroller;
+mod schema;
 mod users_controller;
 use actix_cors::Cors;
 use actix_web::middleware::Logger;
@@ -13,13 +13,16 @@ pub struct AppState {
     db: Pool<Postgres>,
 }
 
-use model::*;
-use schema::*;
 use handler::*;
+use model::*;
 use printscontroller::*;
-use users_controller::*;
+use schema::*;
 use std::error::Error;
-use utoipa::{ openapi::security::{ApiKey, ApiKeyValue, SecurityScheme}, Modify, OpenApi };
+use users_controller::*;
+use utoipa::{
+    openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
+    Modify, OpenApi,
+};
 use utoipa_swagger_ui::SwaggerUi;
 
 #[actix_web::main]
@@ -50,14 +53,24 @@ async fn main() -> std::io::Result<()> {
 
     #[derive(OpenApi)]
     #[openapi(
-    paths(
-    get_file_by_id, get_files_by_user_id, create_file, delete_file, edit_file, get_user_id_by_mail
-    ),
-    components(
-    schemas(
-    FileResponseModel, FileExtendedResponseModel, UserModel, PrintModel, UpdateFileSchema, CreateFileSchema, GetIdSchema, CreateFilePermissionSchema
-    )
-    )
+        paths(
+            get_file_by_id,
+            get_files_by_user_id,
+            create_file,
+            delete_file,
+            edit_file,
+            get_user_id_by_mail
+        ),
+        components(schemas(
+            FileResponseModel,
+            FileExtendedResponseModel,
+            UserModel,
+            PrintModel,
+            UpdateFileSchema,
+            CreateFileSchema,
+            GetIdSchema,
+            CreateFilePermissionSchema
+        ))
     )]
     struct ApiDoc;
 
@@ -76,8 +89,10 @@ async fn main() -> std::io::Result<()> {
             .configure(handler::config)
             .wrap(cors)
             .wrap(Logger::default())
-            .service(SwaggerUi::new("/swagger-ui/{_:.*}")
-                .url("/api-doc/openapi.json", ApiDoc::openapi()))
+            .service(
+                SwaggerUi::new("/swagger-ui/{_:.*}")
+                    .url("/api-doc/openapi.json", ApiDoc::openapi()),
+            )
     })
     .bind(("0.0.0.0", 8000))?
     .run()

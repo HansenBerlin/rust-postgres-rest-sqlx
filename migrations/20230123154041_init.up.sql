@@ -269,16 +269,15 @@ END LOOP;
 END
 $do$;
 
-CREATE TABLE users (
-                       id SERIAL PRIMARY KEY,
-                       name VARCHAR(50),
-                       email VARCHAR(100)
+CREATE TABLE users_account_numbers (
+                       username VARCHAR(50) not null,
+                       accountno VARCHAR(50) not null
 );
 
-INSERT INTO users (name, email)
+INSERT INTO users_account_numbers (username, accountno)
 VALUES
-    ('Alice', 'alice@example.com'),
-    ('Bob', 'bob@example.com'),
-    ('Charlie', 'charlie@example.com');
+    ('alice', '1234-5678'),
+    ('bob', '1111-1111'),
+    ('charlie', '4242-4242');
 
 

@@ -13,4 +13,4 @@ DROP TABLE IF EXISTS material;
 DROP TABLE IF EXISTS material_brand;
 DROP TABLE IF EXISTS gcode;
 DROP TABLE IF EXISTS file;
-DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS users_account_numbers;

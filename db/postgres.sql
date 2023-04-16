@@ -269,4 +269,15 @@ END LOOP;
 END
 $do$;
 
+CREATE TABLE users_account_numbers (
+                                       username VARCHAR(50) not null,
+                                       accountno integer not null
+);
+
+INSERT INTO users_account_numbers (username, accountno)
+VALUES
+    ('alice', 12345678),
+    ('bob', 11111111),
+    ('charlie', 42424242);
+
 

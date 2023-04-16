@@ -1,26 +1,26 @@
+use crate::model::{FileSimpleResponseModel, User};
+use crate::printscontroller::print_list_handler;
+use crate::schema::CreateFilePermissionSchema;
+use crate::users_controller::{get_user_id_by_mail, user_list_handler};
 use crate::{
     model::{FileExtendedResponseModel, FileResponseModel, UserModel},
-    schema::{CreateFileSchema, FilterOptions, UpdateFileSchema, GetIdSchema},
+    schema::{CreateFileSchema, FilterOptions, GetIdSchema, UpdateFileSchema},
     AppState,
 };
+use actix_web::http::header::q;
 use actix_web::{delete, get, patch, post, web, HttpResponse, Responder};
 use serde_json::{from_value, json};
 use uuid::Uuid;
-use crate::model::FileSimpleResponseModel;
-use crate::printscontroller::{print_list_handler};
-use crate::schema::CreateFilePermissionSchema;
-use crate::users_controller::{get_user_id_by_mail, user_list_handler};
 //use postgres::{Client, NoTls};
 use tokio_postgres::{Client, NoTls};
 
-
+const DATABASE_URL: &str = "postgresql://admin:password123@localhost:6500/rust_sqlx";
 
 #[get("/")]
 async fn health_checker_handler() -> impl Responder {
     const MESSAGE: &str = "Build Simple CRUD API with Rust, SQLX, Postgres,and Actix Web";
     HttpResponse::Ok().json(json!({"status": "success","message": MESSAGE}))
 }
-
 
 #[utoipa::path(responses(
 (status = 200, description = "OK", body = Vec<FileResponseModel>),
@@ -80,12 +80,9 @@ on a.id = b.id LIMIT $2 OFFSET $3",
     HttpResponse::Ok().json(notes)
 }
 
-#[get("/users-unsafe/{id}")]
-async fn get_user_by_id_unsafe(id: web::Path<String>) -> impl Responder {
-    println!("id {}", id);
-    let id = id.into_inner();
-    let DATABASE_URL="postgresql://admin:password123@localhost:6500/rust_sqlx";
-
+#[get("/users-unsafe/{username}")]
+async fn get_user_by_id_unsafe(username: web::Path<String>) -> impl Responder {
+    let username = username.into_inner();
     let (client, connection) = tokio_postgres::connect(DATABASE_URL, NoTls).await.unwrap();
 
     tokio::spawn(async move {
@@ -94,24 +91,48 @@ async fn get_user_by_id_unsafe(id: web::Path<String>) -> impl Responder {
         }
     });
 
-    let query = format!("SELECT * FROM users WHERE id = '{}'", id);
-    let rows = client.query(query.as_str(), &[]).await.unwrap();
+    let query = format!(
+        "\
+    SELECT username, accountno \
+    FROM users_account_numbers \
+    WHERE username = '{}'",
+        username
+    );
 
-    let mut result = String::new();
+    let rows = client.query(query.as_str(), &[]).await.unwrap();
+    let mut accounts = Vec::new();
     for row in &rows {
-        let name: String = row.get(1);
-        let email: String = row.get(2);
-        result.push_str(format!("Name: {}, Email: {}\n", name, email).as_str());
+        let username: String = row.get(0);
+        let account_no: String = row.get(1);
+        accounts.push(json!({"username": username, "accountno": account_no}));
     }
 
-    drop(client); // Close the connection by dropping the client object
-
-    HttpResponse::Ok().json(result)
+    drop(client);
+    HttpResponse::Ok().json(accounts)
 }
 
+#[get("/users-safe/{username}")]
+async fn get_user_by_id_safe(
+    username: web::Path<String>,
+    data: web::Data<AppState>,
+) -> impl Responder {
+    let username = username.into_inner();
+    let accounts = sqlx::query_as!(
+        User,
+        "\
+        SELECT username, accountno \
+        FROM users_account_numbers \
+        WHERE username = $1",
+        username
+    )
+    .fetch_all(&data.db)
+    .await;
 
-
-
+    match accounts {
+        Ok(users) => HttpResponse::Ok().json(users),
+        Err(e) => HttpResponse::InternalServerError().finish(),
+    }
+}
 
 #[utoipa::path(responses(
 (status = 200, description = "OK", body = FileResponseModel),
@@ -151,24 +172,21 @@ FROM inserted_file
     .await;
 
     return match query_result {
-        Ok(note) => {
-            HttpResponse::Ok().json(note)
-        }
+        Ok(note) => HttpResponse::Ok().json(note),
         Err(e) => {
             if e.to_string()
                 .contains("duplicate key value violates unique constraint")
             {
-                return HttpResponse::BadRequest()
-                    .json(json!({"status": "fail","message": "Note with that title already exists"}));
+                return HttpResponse::BadRequest().json(
+                    json!({"status": "fail","message": "Note with that title already exists"}),
+                );
             }
 
             HttpResponse::InternalServerError()
                 .json(json!({"status": "error","message": format!("{:?}", e)}))
         }
-    }
+    };
 }
-
-
 
 #[utoipa::path(responses(
 (status = 200, description = "OK", body = Vec<FileResponseModel>),
@@ -184,7 +202,8 @@ async fn get_file_by_id(
     data: web::Data<AppState>,
 ) -> impl Responder {
     let note_id = path.into_inner();
-    let query_result = sqlx::query_as!(FileSimpleResponseModel,
+    let query_result = sqlx::query_as!(
+        FileSimpleResponseModel,
         "
 select a.*, user_name as owner, roles_pk from
     (select id, fullname, created, sizebytes, downloads, average_rating
@@ -193,22 +212,19 @@ select a.*, user_name as owner, roles_pk from
         left join files_per_user fpu on a.id = fpu.files_pk
         left join user_account ua on ua.id = fpu.user_account_pk
 where ua.id = $2",
-        note_id.0, note_id.1)
-        .fetch_one(&data.db)
-        .await;
+        note_id.0,
+        note_id.1
+    )
+    .fetch_one(&data.db)
+    .await;
 
     return match query_result {
-        Ok(note) => {
-
-
-            HttpResponse::Ok().json(note)
-        }
+        Ok(note) => HttpResponse::Ok().json(note),
         Err(_) => {
             let message = format!("Note with ID: {}, {} not found", note_id.0, note_id.1);
-            HttpResponse::NotFound()
-                .json(json!({"status": "fail","message": message}))
+            HttpResponse::NotFound().json(json!({"status": "fail","message": message}))
         }
-    }
+    };
 }
 
 #[utoipa::path(responses(
@@ -227,9 +243,13 @@ async fn edit_file(
     data: web::Data<AppState>,
 ) -> impl Responder {
     let note_id = path.into_inner();
-    let query_result = sqlx::query_as!(FileResponseModel, "SELECT * FROM file WHERE id = $1", note_id)
-        .fetch_one(&data.db)
-        .await;
+    let query_result = sqlx::query_as!(
+        FileResponseModel,
+        "SELECT * FROM file WHERE id = $1",
+        note_id
+    )
+    .fetch_one(&data.db)
+    .await;
 
     if query_result.is_err() {
         let message = format!("Note with ID: {} not found", note_id);
@@ -262,12 +282,10 @@ async fn edit_file(
         }
         Err(err) => {
             let message = format!("Error: {:?}", err);
-            HttpResponse::InternalServerError()
-                .json(json!({"status": "error","message": message}))
+            HttpResponse::InternalServerError().json(json!({"status": "error","message": message}))
         }
-    }
+    };
 }
-
 
 #[utoipa::path(responses(
 (status = 200, description = "OK", body = Vec<FileResponseModel>),
@@ -278,10 +296,7 @@ params(
 ("id" = Uuid, Path, description = "File Uuid (e.g 2b377fba-903f-4957-b33d-3ed2c2b2b848)")
 ))]
 #[delete("/files/{id}")]
-async fn delete_file(
-    path: web::Path<uuid::Uuid>,
-    data: web::Data<AppState>,
-) -> impl Responder {
+async fn delete_file(path: web::Path<uuid::Uuid>, data: web::Data<AppState>) -> impl Responder {
     let note_id = path.into_inner();
     let rows_affected = sqlx::query!("DELETE FROM file WHERE id = $1", note_id)
         .execute(&data.db)
@@ -296,7 +311,6 @@ async fn delete_file(
 
     HttpResponse::NoContent().finish()
 }
-
 
 #[utoipa::path(responses(
 (status = 200, description = "OK", body = String),
@@ -315,9 +329,6 @@ pub async fn get_user_id_by_mail2(
     HttpResponse::Ok().json(format!("hello {}", mail))
 }
 
-
-
-
 pub fn config(conf: &mut web::ServiceConfig) {
     let scope = web::scope("/api")
         .service(health_checker_handler)
@@ -329,6 +340,7 @@ pub fn config(conf: &mut web::ServiceConfig) {
         .service(delete_file)
         .service(get_user_id_by_mail)
         .service(get_user_by_id_unsafe)
+        .service(get_user_by_id_safe)
         .service(print_list_handler);
 
     conf.service(scope);

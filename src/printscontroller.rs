@@ -1,12 +1,8 @@
-use crate::{
-    schema::{FilterOptions},
-    AppState,
-};
+use crate::model::PrintModel;
+use crate::{schema::FilterOptions, AppState};
 use actix_web::{delete, get, patch, post, web, HttpResponse, Responder};
 use serde_json::json;
 use uuid::Uuid;
-use crate::model::PrintModel;
-
 
 #[get("/prints/{id}")]
 pub async fn print_list_handler(
@@ -54,5 +50,3 @@ pub async fn print_list_handler(
     });
     HttpResponse::Ok().json(json_response)
 }
-
-
