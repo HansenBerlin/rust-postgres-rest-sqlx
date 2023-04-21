@@ -1,20 +1,15 @@
-use crate::model::{FileSimpleResponseModel, User};
-use crate::printscontroller::print_list_handler;
-use crate::schema::CreateFilePermissionSchema;
+use crate::prints_controller::print_list_handler;
 use crate::users_controller::{get_user_id_by_mail, user_list_handler};
 use crate::{
-    model::{FileExtendedResponseModel, FileResponseModel, UserModel},
-    schema::{CreateFileSchema, FilterOptions, GetIdSchema, UpdateFileSchema},
+    model::FileResponseModel, FileExtendedResponseModel, FileSimpleResponseModel,
+    schema::{CreateFileSchema, FilterOptions, UpdateFileSchema},
     AppState,
 };
-use actix_web::http::header::q;
-use actix_web::{delete, get, patch, post, web, HttpResponse, Responder};
-use serde_json::{from_value, json};
-use uuid::Uuid;
-//use postgres::{Client, NoTls};
-use tokio_postgres::{Client, NoTls};
 
-const DATABASE_URL: &str = "postgresql://admin:password123@localhost:6500/rust_sqlx";
+use actix_web::{delete, get, patch, post, web, HttpResponse, Responder};
+use serde_json::json;
+use uuid::Uuid;
+
 
 #[get("/")]
 async fn health_checker_handler() -> impl Responder {
@@ -80,60 +75,6 @@ on a.id = b.id LIMIT $2 OFFSET $3",
     HttpResponse::Ok().json(notes)
 }
 
-#[get("/users-unsafe/{username}")]
-async fn get_user_by_id_unsafe(username: web::Path<String>) -> impl Responder {
-    let username = username.into_inner();
-    let (client, connection) = tokio_postgres::connect(DATABASE_URL, NoTls).await.unwrap();
-
-    tokio::spawn(async move {
-        if let Err(e) = connection.await {
-            eprintln!("connection error: {}", e);
-        }
-    });
-
-    let query = format!(
-        "\
-    SELECT username, accountno \
-    FROM users_account_numbers \
-    WHERE username = '{}'",
-        username
-    );
-
-    let rows = client.query(query.as_str(), &[]).await.unwrap();
-    let mut accounts = Vec::new();
-    for row in &rows {
-        let username: String = row.get(0);
-        let account_no: String = row.get(1);
-        accounts.push(json!({"username": username, "accountno": account_no}));
-    }
-
-    drop(client);
-    HttpResponse::Ok().json(accounts)
-}
-
-#[get("/users-safe/{username}")]
-async fn get_user_by_id_safe(
-    username: web::Path<String>,
-    data: web::Data<AppState>,
-) -> impl Responder {
-    let username = username.into_inner();
-    let accounts = sqlx::query_as!(
-        User,
-        "\
-        SELECT username, accountno \
-        FROM users_account_numbers \
-        WHERE username = $1",
-        username
-    )
-    .fetch_all(&data.db)
-    .await;
-
-    match accounts {
-        Ok(users) => HttpResponse::Ok().json(users),
-        Err(e) => HttpResponse::InternalServerError().finish(),
-    }
-}
-
 #[utoipa::path(responses(
 (status = 200, description = "OK", body = FileResponseModel),
 (status = 404, description = "Files not found", body = String),
@@ -149,19 +90,19 @@ async fn create_file(
     let query_result = sqlx::query_as!(
         FileResponseModel,
         "
-WITH inserted_file AS (
-    INSERT INTO file (fullname, downloads, average_rating, sizebytes)
-        VALUES ($1, $2, $3, $4)
-        RETURNING id, fullname, created, sizebytes, downloads, average_rating
-), inserted_files_per_user AS (
-    INSERT INTO files_per_user (user_account_pk, roles_pk, files_pk)
-        VALUES ($5, 'owner', (SELECT id FROM inserted_file))
-        RETURNING user_account_pk, roles_pk, files_pk
-)
-SELECT inserted_file.id, inserted_file.fullname, inserted_file.created, inserted_file.sizebytes,
-inserted_file.downloads, inserted_file.average_rating
-FROM inserted_file
-",
+            WITH inserted_file AS (
+                INSERT INTO file (fullname, downloads, average_rating, sizebytes)
+                    VALUES ($1, $2, $3, $4)
+                    RETURNING id, fullname, created, sizebytes, downloads, average_rating
+            ), inserted_files_per_user AS (
+                INSERT INTO files_per_user (user_account_pk, roles_pk, files_pk)
+                    VALUES ($5, 'owner', (SELECT id FROM inserted_file))
+                    RETURNING user_account_pk, roles_pk, files_pk
+            )
+            SELECT inserted_file.id, inserted_file.fullname, inserted_file.created, inserted_file.sizebytes,
+            inserted_file.downloads, inserted_file.average_rating
+            FROM inserted_file
+        ",
         body.fullname,
         0,
         0.0,
@@ -312,23 +253,6 @@ async fn delete_file(path: web::Path<uuid::Uuid>, data: web::Data<AppState>) -> 
     HttpResponse::NoContent().finish()
 }
 
-#[utoipa::path(responses(
-(status = 200, description = "OK", body = String),
-(status = 404, description = "Files not found", body = String),
-(status = 500, description = "Internal server error", body = String)
-),
-params(
-("mail" = String, Path, description = "User Mail")
-))]
-#[get("/usersaa/{mail}")]
-pub async fn get_user_id_by_mail2(
-    path: web::Path<String>,
-    data: web::Data<AppState>,
-) -> impl Responder {
-    let mail = path.into_inner();
-    HttpResponse::Ok().json(format!("hello {}", mail))
-}
-
 pub fn config(conf: &mut web::ServiceConfig) {
     let scope = web::scope("/api")
         .service(health_checker_handler)
@@ -339,9 +263,6 @@ pub fn config(conf: &mut web::ServiceConfig) {
         .service(edit_file)
         .service(delete_file)
         .service(get_user_id_by_mail)
-        .service(get_user_by_id_unsafe)
-        .service(get_user_by_id_safe)
         .service(print_list_handler);
-
     conf.service(scope);
 }

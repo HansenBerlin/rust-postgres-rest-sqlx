@@ -219,8 +219,8 @@ BEGIN
 FOR i IN 1..500 LOOP
                 INSERT INTO print (material_fk, printer_fk, gcode_fk, nozzle_size_mm, bed_temp_celsius, successful, extruder_temp)
                 VALUES (
-                           null,
-                           null,
+                           (SELECT id FROM material ORDER BY random() LIMIT 1),
+                           (SELECT id FROM printer ORDER BY random() LIMIT 1),
                            (SELECT id FROM gcode ORDER BY random() LIMIT 1),
                            (SELECT ROUND((SELECT random()*(0.8-0.1)+0.1)::numeric, 1)),
                            (SELECT random()*(80-40)+40),
@@ -268,16 +268,5 @@ END;
 END LOOP;
 END
 $do$;
-
-CREATE TABLE users_account_numbers (
-                                       username VARCHAR(50) not null,
-                                       accountno integer not null
-);
-
-INSERT INTO users_account_numbers (username, accountno)
-VALUES
-    ('alice', 12345678),
-    ('bob', 11111111),
-    ('charlie', 42424242);
 
 

@@ -1,6 +1,6 @@
 use crate::model::PrintModel;
 use crate::{schema::FilterOptions, AppState};
-use actix_web::{delete, get, patch, post, web, HttpResponse, Responder};
+use actix_web::{get, web, HttpResponse, Responder};
 use serde_json::json;
 use uuid::Uuid;
 

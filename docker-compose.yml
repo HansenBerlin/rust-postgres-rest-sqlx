@@ -3,13 +3,15 @@ services:
   postgres:
     image: postgres:latest
     container_name: postgres
+    expose:
+      - 5432
     ports:
-      - '6500:5432'
+      - "6500:5432"
     networks:
       backend:
         ipv4_address: 192.168.176.2
     volumes:
-      - progresDB:/data/postgres
+      - postgresDB:/data/postgres
       - ./db/postgres.conf:/etc/postgresql/postgresql.conf
       - ./db/postgres.sql:/docker-entrypoint-initdb.d/postgres.sql
     command: postgres -c config_file=/etc/postgresql/postgresql.conf
@@ -17,7 +19,7 @@ services:
       - ./.env
 
   rest-api:
-    image: actix-postgres-threedee:latest
+    image: hansendockedin/web-app-rest-api:latest
     ports:
       - "8000:8000"
     networks:
@@ -27,7 +29,7 @@ services:
     environment:
       - DATABASE_URL=postgresql://admin:password123@192.168.176.2:5432/rust_sqlx?schema=public
 volumes:
-  progresDB:
+  postgresDB:
 
 networks:
   backend:

@@ -1,9 +1,7 @@
 use crate::model::UserModel;
-use crate::schema::GetIdSchema;
-use crate::{schema::FilterOptions, AppState};
-use actix_web::{delete, get, patch, post, web, HttpResponse, Responder};
+use crate::{schema::FilterOptions, AppState, GetIdSchema};
+use actix_web::{get, web, HttpResponse, Responder};
 use serde_json::json;
-use uuid::Uuid;
 
 #[get("/users")]
 pub async fn user_list_handler(
@@ -12,7 +10,6 @@ pub async fn user_list_handler(
 ) -> impl Responder {
     let limit = opts.limit.unwrap_or(10);
     let offset = (opts.page.unwrap_or(1) - 1) * limit;
-
     let query_result = sqlx::query_as!(
         UserModel,
         "SELECT * FROM user_account LIMIT $1 OFFSET $2",

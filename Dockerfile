@@ -2,9 +2,9 @@ FROM rust:1.60.0-bullseye AS build
 WORKDIR /app
 COPY . .
 
-# RUN cargo install sqlx-cli --no-default-features --features native-tls,postgres
-# RUN sqlx migrate run
 ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
+#RUN cargo install sqlx-cli --no-default-features --features native-tls,postgres
+#RUN sqlx migrate run
 ENV SQLX_OFFLINE=true
 RUN cargo build --release
 RUN mkdir -p /app/lib

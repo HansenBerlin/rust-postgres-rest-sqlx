@@ -1,6 +1,6 @@
 mod handler;
 mod model;
-mod printscontroller;
+mod prints_controller;
 mod schema;
 mod users_controller;
 use actix_cors::Cors;
@@ -8,22 +8,16 @@ use actix_web::middleware::Logger;
 use actix_web::{http::header, web, App, HttpServer};
 use dotenv::dotenv;
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
+use utoipa_swagger_ui::SwaggerUi;
+use handler::*;
+use model::*;
+use schema::*;
+use users_controller::*;
+use utoipa::OpenApi;
 
 pub struct AppState {
     db: Pool<Postgres>,
 }
-
-use handler::*;
-use model::*;
-use printscontroller::*;
-use schema::*;
-use std::error::Error;
-use users_controller::*;
-use utoipa::{
-    openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
-    Modify, OpenApi,
-};
-use utoipa_swagger_ui::SwaggerUi;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -76,7 +70,7 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         let cors = Cors::default()
-            .allowed_origin("http://localhost:5001")
+            .allowed_origin("https://localhost:5001")
             .allowed_methods(vec!["GET", "POST", "PATCH", "DELETE"])
             .allowed_headers(vec![
                 header::CONTENT_TYPE,
