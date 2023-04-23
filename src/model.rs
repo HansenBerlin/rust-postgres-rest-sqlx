@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
-use utoipa::{openapi, ToSchema};
+use utoipa::{ToSchema};
 use uuid::Uuid;
 
 
@@ -52,8 +52,6 @@ pub struct FileResponse {
 #[derive(Debug, FromRow, Deserialize, Serialize, Clone, ToSchema)]
 #[allow(non_snake_case)]
 pub struct FileResponseModel {
-    #[serde(rename = "averageRating")]
-
     pub id: Uuid,
     pub fullname: String,
     pub created: Option<chrono::DateTime<chrono::Utc>>,

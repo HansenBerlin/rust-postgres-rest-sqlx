@@ -1,18 +1,21 @@
-mod handler;
 mod model;
-mod prints_controller;
 mod schema;
+mod handler;
+mod prints_controller;
+mod files_controller;
 mod users_controller;
+mod query_service;
+
 use actix_cors::Cors;
 use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpServer};
 use dotenv::dotenv;
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use utoipa_swagger_ui::SwaggerUi;
-use handler::*;
 use model::*;
 use schema::*;
 use users_controller::*;
+use files_controller::*;
 use utoipa::{OpenApi};
 
 
@@ -51,7 +54,7 @@ async fn main() -> std::io::Result<()> {
     #[openapi(
         paths(
             get_file_by_id,
-            get_files_by_user_id,
+            get_file_by_user,
             create_file,
             delete_file,
             edit_file,
@@ -89,4 +92,6 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+
 

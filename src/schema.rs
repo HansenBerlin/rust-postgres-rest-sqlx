@@ -14,25 +14,10 @@ pub struct ParamOptions {
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
-pub struct UpdateFileSchema {
-    pub fullname: Option<String>,
-    pub downloads: Option<i32>,
-    pub average_rating: Option<f32>,
-}
-
-#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct UpdateFile {
     pub fullname: Option<String>,
     pub downloads: Option<i32>,
     pub average_rating: Option<f32>,
-}
-
-#[derive(Debug, Deserialize, Serialize, ToSchema)]
-pub struct CreateFileSchema {
-    pub fullname: String,
-    pub sizebytes: i64,
-    #[serde(rename = "ownerUserId")]
-    pub owner_user_id: Uuid,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
