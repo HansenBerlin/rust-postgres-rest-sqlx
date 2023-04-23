@@ -261,12 +261,14 @@ FOR i IN 1..80 LOOP BEGIN
                     (SELECT permission FROM file_permissions
                      WHERE permission = 'read' or permission = 'delete'
                      ORDER BY random() LIMIT 1),
-                    (SELECT id FROM file ORDER BY random() LIMIT 1)
+                    (SELECT id FROM file
+                        WHERE fullname != 'anbumaske'
+                            AND fullname != 'fliege'
+                        ORDER BY random() LIMIT 1)
                 );
 EXCEPTION WHEN unique_violation THEN
 END;
 END LOOP;
 END
 $do$;
-
 

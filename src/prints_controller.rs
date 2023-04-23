@@ -6,11 +6,14 @@ use uuid::Uuid;
 
 #[get("/prints/{id}")]
 pub async fn print_list_handler(
-    path: web::Path<Uuid>,
+    path: web::Path<String>,
     opts: web::Query<FilterOptions>,
     data: web::Data<AppState>,
 ) -> impl Responder {
     let file_id = path.into_inner();
+    let id = Uuid::parse_str(&file_id).unwrap_or(Uuid::new_v4());
+
+
     let limit = opts.limit.unwrap_or(10);
     let offset = (opts.page.unwrap_or(1) - 1) * limit;
 
@@ -28,7 +31,7 @@ pub async fn print_list_handler(
             left join file f on f.id = g.file_pk
         where f.id = $1
         ORDER by id LIMIT $2 OFFSET $3",
-        file_id as Uuid,
+        id,
         limit as i32,
         offset as i32,
         )

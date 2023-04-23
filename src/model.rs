@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
-use utoipa::ToSchema;
+use utoipa::{openapi, ToSchema};
 use uuid::Uuid;
+
 
 #[derive(Debug, FromRow, Deserialize, Serialize, Clone, ToSchema)]
 #[allow(non_snake_case)]
@@ -28,14 +29,31 @@ pub struct FileSimpleResponseModel {
     pub downloads: Option<i32>,
     #[serde(rename = "averageRating")]
     pub average_rating: Option<f32>,
-    pub owner: String,
-    #[serde(rename = "permission")]
-    pub roles_pk: String,
+    //pub owner: String,
+    //#[serde(rename = "permission")]
+    //pub roles_pk: String,
+}
+
+#[derive(Debug, FromRow, Deserialize, Serialize, Clone, ToSchema)]
+#[allow(non_snake_case)]
+pub struct FileResponse {
+    pub id: String,
+    pub fullname: String,
+    pub created: Option<String>,
+    pub sizebytes: i64,
+    pub downloads: Option<i32>,
+    #[serde(rename = "averageRating")]
+    pub average_rating: Option<f32>,
+    //pub owner: String,
+    //#[serde(rename = "permission")]
+    //pub roles_pk: String,
 }
 
 #[derive(Debug, FromRow, Deserialize, Serialize, Clone, ToSchema)]
 #[allow(non_snake_case)]
 pub struct FileResponseModel {
+    #[serde(rename = "averageRating")]
+
     pub id: Uuid,
     pub fullname: String,
     pub created: Option<chrono::DateTime<chrono::Utc>>,
@@ -49,13 +67,6 @@ pub struct FileResponseModel {
 pub struct UserModel {
     pub id: Uuid,
     pub user_name: String,
-}
-
-#[derive(Debug, FromRow, Deserialize, Serialize, Clone, ToSchema)]
-pub struct User {
-    pub username: String,
-    #[serde(rename = "accountno")]
-    pub accountno: String,
 }
 
 #[derive(Debug, FromRow, Deserialize, Serialize, ToSchema)]

@@ -5,7 +5,7 @@ mod schema;
 mod users_controller;
 use actix_cors::Cors;
 use actix_web::middleware::Logger;
-use actix_web::{http::header, web, App, HttpServer};
+use actix_web::{web, App, HttpServer};
 use dotenv::dotenv;
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use utoipa_swagger_ui::SwaggerUi;
@@ -13,16 +13,18 @@ use handler::*;
 use model::*;
 use schema::*;
 use users_controller::*;
-use utoipa::OpenApi;
+use utoipa::{OpenApi};
+
 
 pub struct AppState {
     db: Pool<Postgres>,
 }
 
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     if std::env::var_os("RUST_LOG").is_none() {
-        std::env::set_var("RUST_LOG", "actix_web=info");
+        std::env::set_var("RUST_LOG", "actix_web=debug");
     }
     dotenv().ok();
     env_logger::init();
@@ -53,30 +55,25 @@ async fn main() -> std::io::Result<()> {
             create_file,
             delete_file,
             edit_file,
-            get_user_id_by_mail
+            get_user_id_by_mail,
+            create_user
         ),
         components(schemas(
-            FileResponseModel,
-            FileExtendedResponseModel,
-            UserModel,
-            PrintModel,
-            UpdateFileSchema,
-            CreateFileSchema,
-            GetIdSchema,
-            CreateFilePermissionSchema
+            UpdateFile,
+            CreateFile,
+            IdSchema,
+            CreateUser,
+            FileResponse
         ))
     )]
     struct ApiDoc;
 
+
     HttpServer::new(move || {
         let cors = Cors::default()
-            .allowed_origin("https://localhost:5001")
-            .allowed_methods(vec!["GET", "POST", "PATCH", "DELETE"])
-            .allowed_headers(vec![
-                header::CONTENT_TYPE,
-                header::AUTHORIZATION,
-                header::ACCEPT,
-            ])
+            .allow_any_header()
+            .allow_any_origin()
+            .allow_any_method()
             .supports_credentials();
         App::new()
             .app_data(web::Data::new(AppState { db: pool.clone() }))
@@ -92,3 +89,4 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
