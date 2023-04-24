@@ -6,10 +6,8 @@ use crate::{
 
 use actix_web::{delete, get, patch, post, web, HttpResponse, Responder};
 use serde_json::json;
-use uuid::{Uuid, uuid};
+use uuid::Uuid;
 use crate::query_service::file_queries::*;
-
-
 
 #[utoipa::path(
 context_path = "/api",
@@ -22,7 +20,7 @@ params(
 ("userid" = String, Path, description = "User Uuid (e.g 2b377fba-903f-4957-b33d-3ed2c2b2b848)")
 ))]
 #[get("/files/private/{userid}")]
-pub async fn get_file_by_user(
+pub async fn get_private_files(
     opts: web::Query<FilterOptions>,
     data: web::Data<AppState>,
     path: web::Path<String>,
@@ -35,13 +33,40 @@ pub async fn get_file_by_user(
     let query_result = select_private(id, limit, offset, data)
         .await;
     if query_result.is_err() {
-        let message = "Something bad happened while fetching all note items";
+        let message = "Something bad happened while fetching all file items";
         return HttpResponse::InternalServerError()
             .json(json!({"status": "error","message": message}));
     }
 
-    let notes = query_result.unwrap();
-    HttpResponse::Ok().json(notes)
+    let files = query_result.unwrap();
+    HttpResponse::Ok().json(files)
+}
+
+#[utoipa::path(
+context_path = "/api",
+responses(
+(status = 200, description = "OK", body = Vec<FileResponse>),
+(status = 404, description = "Files not found", body = String),
+(status = 500, description = "Internal server error", body = String)
+))]
+#[get("/files/public")]
+pub async fn get_public_files(
+    opts: web::Query<FilterOptions>,
+    data: web::Data<AppState>,
+) -> impl Responder {
+    let limit = opts.limit.unwrap_or(10);
+    let offset = (opts.page.unwrap_or(1) - 1) * limit;
+
+    let query_result = select_public(limit, offset, data)
+        .await;
+    if query_result.is_err() {
+        let message = "Something bad happened while fetching all files";
+        return HttpResponse::InternalServerError()
+            .json(json!({"status": "error","message": message}));
+    }
+
+    let files = query_result.unwrap();
+    HttpResponse::Ok().json(files)
 }
 
 #[utoipa::path(
@@ -60,7 +85,7 @@ pub async fn create_file(
 ) -> impl Responder {
     let query_result = insert_file(body, data).await;
     let result = match query_result {
-        Ok(note) => HttpResponse::Created().json(note),
+        Ok(file) => HttpResponse::Created().json(file),
         Err(e) => {
             if e.to_string()
                 .contains("duplicate key value violates unique constraint") {
@@ -72,7 +97,6 @@ pub async fn create_file(
                 .json(json!({"status": "error","message": format!("{:?}", e)}))
         }
     };
-
     result
 }
 
@@ -86,24 +110,24 @@ responses(
 params(
 ("id" = String, Path, description = "File Uuid (e.g 2b377fba-903f-4957-b33d-3ed2c2b2b848)")
 ))]
-#[get("/files/{id}")]
-pub async fn get_file_by_id(
+#[get("/files/all/{id}")]
+pub async fn get_file(
     path: web::Path<Uuid>,
     data: web::Data<AppState>,
 ) -> impl Responder {
-    let note_id = path.into_inner();
+    let file_id = path.into_inner();
     let query_result = sqlx::query_as!(
         FileResponseModel,
         "select * from file where id = $1",
-        note_id
+        file_id
     )
     .fetch_one(&data.db)
     .await;
 
     return match query_result {
-        Ok(note) => HttpResponse::Ok().json(note),
+        Ok(file) => HttpResponse::Ok().json(file),
         Err(_) => {
-            let message = format!("Note with ID:{} not found", note_id);
+            let message = format!("File with ID:{} not found", file_id);
             HttpResponse::NotFound().json(json!({"status": "fail","message": message}))
         }
     };
@@ -127,8 +151,8 @@ pub async fn edit_file(
     body: web::Json<UpdateFile>,
     data: web::Data<AppState>,
 ) -> impl Responder {
-    let note_id = path.into_inner();
-    let id = Uuid::parse_str(&note_id).unwrap_or(Uuid::new_v4());
+    let file_id = path.into_inner();
+    let id = Uuid::parse_str(&file_id).unwrap_or(Uuid::new_v4());
     let query_result = sqlx::query_as!(
         FileResponseModel,
         "SELECT * FROM file WHERE id = $1",
@@ -138,7 +162,7 @@ pub async fn edit_file(
     .await;
 
     if query_result.is_err() {
-        let message = format!("Note with ID: {} not found", note_id);
+        let message = format!("File with ID: {} not found", file_id);
         return HttpResponse::NotFound()
             .json(serde_json::json!({"status": "fail","message": message}));
     }
@@ -175,24 +199,27 @@ pub async fn edit_file(
 #[utoipa::path(
 context_path = "/api",
 responses(
-(status = 200, description = "OK", body = Vec<FileResponse>),
-(status = 404, description = "File not found", body = String),
+(status = 200, description = "OK"),
+(status = 204, description = "File not found", body = String),
 (status = 500, description = "Internal server error", body = String)
 ),
 params(
 ("id" = String, Path, description = "File Uuid (e.g 2b377fba-903f-4957-b33d-3ed2c2b2b848)")
 ))]
 #[delete("/files/{id}")]
-pub async fn delete_file(path: web::Path<Uuid>, data: web::Data<AppState>) -> impl Responder {
-    let note_id = path.into_inner();
-    let rows_affected = sqlx::query!("DELETE FROM file WHERE id = $1", note_id)
+pub async fn delete_file(
+    path: web::Path<Uuid>,
+    data: web::Data<AppState>
+) -> impl Responder {
+    let file_id = path.into_inner();
+    let rows_affected = sqlx::query!("DELETE FROM file WHERE id = $1", file_id)
         .execute(&data.db)
         .await
         .unwrap()
         .rows_affected();
 
     if rows_affected == 0 {
-        let message = format!("Note with ID: {} not found", note_id);
+        let message = format!("File with ID: {} not found", file_id);
         return HttpResponse::NotFound().json(json!({"status": "fail","message": message}));
     }
 

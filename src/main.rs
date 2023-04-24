@@ -53,8 +53,9 @@ async fn main() -> std::io::Result<()> {
     #[derive(OpenApi)]
     #[openapi(
         paths(
-            get_file_by_id,
-            get_file_by_user,
+            get_file,
+            get_private_files,
+            get_public_files,
             create_file,
             delete_file,
             edit_file,

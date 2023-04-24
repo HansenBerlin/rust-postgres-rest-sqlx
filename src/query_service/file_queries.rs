@@ -15,7 +15,7 @@ pub async fn select_public(
 ) -> Result<Vec<FilePublicResponseModel>, Error> {
     let query_result = sqlx::query_as!(
         FilePublicResponseModel,
-        "select file.id, fullname, created, sizebytes, downloads, average_rating,
+        "select file.id as id, fullname, created, sizebytes, downloads, average_rating,
         is_downloadable, ua.user_name as owner from file
             left join files_per_user fpu on file.id = fpu.files_pk
             left join user_account ua on ua.id = fpu.user_account_pk
