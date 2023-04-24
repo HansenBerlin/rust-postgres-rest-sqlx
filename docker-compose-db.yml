@@ -7,9 +7,6 @@ services:
       - '6500:5432'
     volumes:
       - postgresDB:/data/postgres
-      - ./db/postgres.conf:/etc/postgresql/postgresql.conf
-      - ./db/postgres.sql:/docker-entrypoint-initdb.d/postgres.sql
-    command: postgres -c config_file=/etc/postgresql/postgresql.conf
     env_file:
       - ./.env
   pgAdmin:

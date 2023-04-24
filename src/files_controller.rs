@@ -1,5 +1,5 @@
 use crate::{
-    model::FileResponseModel, FileExtendedResponseModel, FileSimpleResponseModel,
+    model::FileResponseModel,
     schema::{CreateFile, UpdateFile, FilterOptions},
     AppState,
 };
@@ -19,9 +19,9 @@ responses(
 (status = 500, description = "Internal server error", body = String)
 ),
 params(
-("id" = String, Path, description = "User Uuid (e.g 2b377fba-903f-4957-b33d-3ed2c2b2b848)")
+("userid" = String, Path, description = "User Uuid (e.g 2b377fba-903f-4957-b33d-3ed2c2b2b848)")
 ))]
-#[get("/files/user/{id}")]
+#[get("/files/private/{userid}")]
 pub async fn get_file_by_user(
     opts: web::Query<FilterOptions>,
     data: web::Data<AppState>,
@@ -32,7 +32,7 @@ pub async fn get_file_by_user(
     let limit = opts.limit.unwrap_or(10);
     let offset = (opts.page.unwrap_or(1) - 1) * limit;
 
-    let query_result = get_by_user_id(id, limit, offset, data)
+    let query_result = select_private(id, limit, offset, data)
         .await;
     if query_result.is_err() {
         let message = "Something bad happened while fetching all note items";
@@ -93,7 +93,7 @@ pub async fn get_file_by_id(
 ) -> impl Responder {
     let note_id = path.into_inner();
     let query_result = sqlx::query_as!(
-        FileSimpleResponseModel,
+        FileResponseModel,
         "select * from file where id = $1",
         note_id
     )
@@ -143,7 +143,6 @@ pub async fn edit_file(
             .json(serde_json::json!({"status": "fail","message": message}));
     }
 
-    //let now = Utc::now();
     let note = query_result.unwrap();
 
     let query_result = sqlx::query_as!(

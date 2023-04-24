@@ -6,22 +6,7 @@ use uuid::Uuid;
 
 #[derive(Debug, FromRow, Deserialize, Serialize, Clone, ToSchema)]
 #[allow(non_snake_case)]
-pub struct FileExtendedResponseModel {
-    pub id: Option<Uuid>,
-    pub fullname: Option<String>,
-    pub created: Option<chrono::DateTime<chrono::Utc>>,
-    pub sizebytes: Option<i64>,
-    pub downloads: Option<i32>,
-    #[serde(rename = "averageRating")]
-    pub average_rating: Option<f32>,
-    pub owner: Option<String>,
-    #[serde(rename = "permission")]
-    pub roles_pk: Option<String>,
-}
-
-#[derive(Debug, FromRow, Deserialize, Serialize, Clone, ToSchema)]
-#[allow(non_snake_case)]
-pub struct FileSimpleResponseModel {
+pub struct FilePublicResponseModel {
     pub id: Uuid,
     pub fullname: String,
     pub created: Option<chrono::DateTime<chrono::Utc>>,
@@ -29,24 +14,24 @@ pub struct FileSimpleResponseModel {
     pub downloads: Option<i32>,
     #[serde(rename = "averageRating")]
     pub average_rating: Option<f32>,
-    //pub owner: String,
-    //#[serde(rename = "permission")]
-    //pub roles_pk: String,
+    pub owner: Option<String>,
+    #[serde(rename = "isDownloadable")]
+    pub is_downloadable: bool,
 }
 
 #[derive(Debug, FromRow, Deserialize, Serialize, Clone, ToSchema)]
 #[allow(non_snake_case)]
-pub struct FileResponse {
-    pub id: String,
+pub struct FilePrivateResponseModel {
+    pub id: Uuid,
     pub fullname: String,
-    pub created: Option<String>,
+    pub created: Option<chrono::DateTime<chrono::Utc>>,
     pub sizebytes: i64,
     pub downloads: Option<i32>,
     #[serde(rename = "averageRating")]
     pub average_rating: Option<f32>,
-    //pub owner: String,
-    //#[serde(rename = "permission")]
-    //pub roles_pk: String,
+    pub owner: String,
+    #[serde(rename = "isDownloadable")]
+    pub is_downloadable: Option<bool>,
 }
 
 #[derive(Debug, FromRow, Deserialize, Serialize, Clone, ToSchema)]
@@ -59,6 +44,27 @@ pub struct FileResponseModel {
     pub downloads: Option<i32>,
     #[serde(rename = "averageRating")]
     pub average_rating: Option<f32>,
+    #[serde(rename = "isDownloadable")]
+    pub is_downloadable: bool,
+    #[serde(rename = "isPublic")]
+    pub is_public: bool,
+}
+
+#[derive(Debug, FromRow, Deserialize, Serialize, Clone, ToSchema)]
+#[allow(non_snake_case)]
+pub struct FileResponse {
+    pub id: String,
+    pub fullname: String,
+    pub created: Option<String>,
+    pub sizebytes: i64,
+    pub downloads: Option<i32>,
+    #[serde(rename = "averageRating")]
+    pub average_rating: Option<f32>,
+    pub owner: String,
+    #[serde(rename = "isDownloadable")]
+    pub is_downloadable: Option<bool>,
+    #[serde(rename = "isPublic")]
+    pub is_public: Option<bool>,
 }
 
 #[derive(Debug, FromRow, Deserialize, Serialize, Clone, ToSchema)]

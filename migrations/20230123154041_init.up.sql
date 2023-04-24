@@ -1,6 +1,4 @@
-
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
--- CREATE TYPE material_type AS ENUM ('PLA', 'PETG', 'ABS', 'Composite', 'Resin');
 
 create table if not exists file
 (
@@ -9,7 +7,9 @@ create table if not exists file
     created       timestamp    WITH TIME ZONE DEFAULT NOW(),
     sizebytes        bigint       not null,
     downloads     integer      default 0,
-    average_rating real         default 0
+    average_rating real         default 0,
+    is_public boolean default true not null,
+    is_downloadable boolean default true not null
     );
 
 
@@ -117,21 +117,21 @@ INSERT INTO user_account (user_name) VALUES ('User 5');
 
 
 INSERT INTO file_permissions (permission) VALUES ('owner');
-INSERT INTO file_permissions (permission) VALUES ('delete');
+INSERT INTO file_permissions (permission) VALUES ('download');
 INSERT INTO file_permissions (permission) VALUES ('read');
 
 
-INSERT INTO file (fullname, created, sizebytes, downloads, average_rating) VALUES ('anbumaske', '2022-03-23 09:10:20.000000', 142345, 11, 1.2);
-INSERT INTO file (fullname, created, sizebytes, downloads, average_rating) VALUES ('fliege','2022-01-05 10:15:00.000000', 10245328, 213, 4.5);
-INSERT INTO file (fullname, created, sizebytes, downloads, average_rating) VALUES ('ironman_maske', '2021-12-20 09:30:00.000000', 3237592, 97, 4.2);
-INSERT INTO file (fullname, created, sizebytes, downloads, average_rating) VALUES ('lichtschwert', '2022-02-12 14:20:00.000000', 248930, 45, 4);
-INSERT INTO file (fullname, created, sizebytes, downloads, average_rating) VALUES ('muecke', '2021-11-08 16:45:00.000000', 1693248, 128, 4.6);
-INSERT INTO file (fullname, created, sizebytes, downloads, average_rating) VALUES ('raumschiff1', '2021-09-22 11:10:00.000000', 10485760, 342, 4.1);
-INSERT INTO file (fullname, created, sizebytes, downloads, average_rating) VALUES ('raumschiff2', '2022-03-18 13:25:00.000000', 8110248, 157, 4.3);
-INSERT INTO file (fullname, created, sizebytes, downloads, average_rating) VALUES ('ring', '2021-10-14 15:40:00.000000', 346827, 68, 4.1);
-INSERT INTO file (fullname, created, sizebytes, downloads, average_rating) VALUES ('ruffy', '2022-04-01 08:55:00.000000', 12964, 23, 4.8);
-INSERT INTO file (fullname, created, sizebytes, downloads, average_rating) VALUES ('sturmtruppler', '2021-12-03 12:45:00.000000', 6291456, 241, 4.7);
-INSERT INTO file (fullname, created, sizebytes, downloads, average_rating) VALUES ('yoda', '2022-02-22 17:30:00.000000', 1425856, 78, 4.2);
+INSERT INTO file (fullname, created, sizebytes, downloads, average_rating, is_public, is_downloadable) VALUES ('anbumaske', '2022-03-23 09:10:20.000000', 142345, 11, 1.2, true, true);
+INSERT INTO file (fullname, created, sizebytes, downloads, average_rating, is_public, is_downloadable) VALUES ('fliege','2022-01-05 10:15:00.000000', 10245328, 213, 4.5, true, true);
+INSERT INTO file (fullname, created, sizebytes, downloads, average_rating, is_public, is_downloadable) VALUES ('ironman_maske', '2021-12-20 09:30:00.000000', 3237592, 97, 4.2, true, false);
+INSERT INTO file (fullname, created, sizebytes, downloads, average_rating, is_public, is_downloadable) VALUES ('lichtschwert', '2022-02-12 14:20:00.000000', 248930, 45, 4, true, false);
+INSERT INTO file (fullname, created, sizebytes, downloads, average_rating, is_public, is_downloadable) VALUES ('muecke', '2021-11-08 16:45:00.000000', 1693248, 128, 4.6, false, true);
+INSERT INTO file (fullname, created, sizebytes, downloads, average_rating, is_public, is_downloadable) VALUES ('raumschiff1', '2021-09-22 11:10:00.000000', 10485760, 342, 4.1, false, true);
+INSERT INTO file (fullname, created, sizebytes, downloads, average_rating, is_public, is_downloadable) VALUES ('raumschiff2', '2022-03-18 13:25:00.000000', 8110248, 157, 4.3, false, true);
+INSERT INTO file (fullname, created, sizebytes, downloads, average_rating, is_public, is_downloadable) VALUES ('ring', '2021-10-14 15:40:00.000000', 346827, 68, 4.1, false, false);
+INSERT INTO file (fullname, created, sizebytes, downloads, average_rating, is_public, is_downloadable) VALUES ('ruffy', '2022-04-01 08:55:00.000000', 12964, 23, 4.8, false, false);
+INSERT INTO file (fullname, created, sizebytes, downloads, average_rating, is_public, is_downloadable) VALUES ('sturmtruppler', '2021-12-03 12:45:00.000000', 6291456, 241, 4.7, false, false);
+INSERT INTO file (fullname, created, sizebytes, downloads, average_rating, is_public, is_downloadable) VALUES ('yoda', '2022-02-22 17:30:00.000000', 1425856, 78, 4.2, false, false);
 
 INSERT INTO printer_brand (full_name) VALUES ('Creality');
 INSERT INTO printer_brand (full_name) VALUES ('Anycubic');
@@ -184,9 +184,8 @@ INSERT INTO material (description, mat_type, material_brand_fk) VALUES ('True Gr
 INSERT INTO material (description, mat_type, material_brand_fk) VALUES ('Bronze Infused', 'PETG', (SELECT id FROM material_brand ORDER BY random() LIMIT 1));
 INSERT INTO material (description, mat_type, material_brand_fk) VALUES ('Translucent Yellow', 'ABS', (SELECT id FROM material_brand ORDER BY random() LIMIT 1));
 
-INSERT INTO user_account_mails (mail, user_account_pk) VALUES ('hansdrum@hotmail.com', (SELECT id FROM user_account ORDER BY random() LIMIT 1));
-INSERT INTO user_account_mails (mail, user_account_pk) VALUES ('hansdrum%40hotmail.com', (SELECT id FROM user_account ORDER BY random() LIMIT 1));
-INSERT INTO user_account_mails (mail, user_account_pk) VALUES ('hansdrum@googlemail.com', (SELECT id FROM user_account ORDER BY random() LIMIT 1));
+-- INSERT INTO user_account_mails (mail, user_account_pk) VALUES ('hansdrum@hotmail.com', (SELECT id FROM user_account ORDER BY random() LIMIT 1));
+-- INSERT INTO user_account_mails (mail, user_account_pk) VALUES ('hansdrum@googlemail.com', (SELECT id FROM user_account ORDER BY random() LIMIT 1));
 
 DO
 $do$
@@ -259,12 +258,11 @@ FOR i IN 1..80 LOOP BEGIN
                 (
                     (SELECT id FROM user_account ORDER BY random() LIMIT 1),
                     (SELECT permission FROM file_permissions
-                     WHERE permission = 'read' or permission = 'delete'
+                     WHERE permission = 'read' or permission = 'download'
                      ORDER BY random() LIMIT 1),
                     (SELECT id FROM file
-                        WHERE fullname != 'anbumaske'
-                            AND fullname != 'fliege'
-                        ORDER BY random() LIMIT 1)
+                     WHERE is_public = false
+                     ORDER BY random() LIMIT 1)
                 );
 EXCEPTION WHEN unique_violation THEN
 END;

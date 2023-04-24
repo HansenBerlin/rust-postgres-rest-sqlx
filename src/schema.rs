@@ -26,6 +26,10 @@ pub struct CreateFile {
     pub sizebytes: i64,
     #[serde(rename = "ownerUserId")]
     pub owner_user_id: String,
+    #[serde(rename = "isDownloadable")]
+    pub is_downloadable: bool,
+    #[serde(rename = "isPublic")]
+    pub is_public: bool
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
